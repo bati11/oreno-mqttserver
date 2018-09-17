@@ -141,3 +141,23 @@ func TestRetain(t *testing.T) {
 		})
 	}
 }
+
+func TestRemainingLength(t *testing.T) {
+	var cases = []struct {
+		in   byte
+		want uint8
+	}{
+		{0x00, 0},
+		{0x01, 1},
+		{0x7F, 127},
+	}
+	for _, tt := range cases {
+		t.Run(fmt.Sprintf("%X", tt.in), func(t *testing.T) {
+			bs := [2]byte{0x10, tt.in}
+			result := packet.ToFixedHeader(bs)
+			if result.RemainingLength != tt.want {
+				t.Errorf("RemainingLength: got %v, want %v", result.RemainingLength, tt.want)
+			}
+		})
+	}
+}
