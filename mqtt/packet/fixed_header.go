@@ -1,7 +1,12 @@
+/*
+Package packet implements packets of MQTT.
+
+*/
 package packet
 
 import "errors"
 
+// FixedHeader is part of MQTT Control Packet.
 type FixedHeader struct {
 	PacketType      uint8
 	Dup             byte
@@ -13,6 +18,7 @@ type FixedHeader struct {
 
 var ErrBytesLength = errors.New("fixed header bytes length is between 2 and 5")
 
+// ToFixedHeader converts bytes into a FixedHeader structure.
 func ToFixedHeader(bs []byte) (FixedHeader, error) {
 	if len(bs) < 2 || 5 < len(bs) {
 		return FixedHeader{}, ErrBytesLength
