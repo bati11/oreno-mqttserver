@@ -18,23 +18,23 @@ func TestToFixedHeader(t *testing.T) {
 	if err != nil {
 		t.Errorf("ToFixedHeader() returns err: %v", err)
 	}
-	if result.PacketType != 1 {
-		t.Errorf("PacketType: got %q, want %q", result.PacketType, 1)
+	if result.PacketType() != 1 {
+		t.Errorf("PacketType: got %v, want %v", result.PacketType(), 1)
 	}
-	if result.Dup != 0 {
-		t.Errorf("Dup: got %q, want %q", result.Dup, 0)
+	if result.Dup() != false {
+		t.Errorf("Dup: got %v, want %v", result.Dup(), false)
 	}
-	if result.QoS1 != 0 {
-		t.Errorf("QoS1: got %q, want %q", result.QoS1, 0)
+	if result.QoS1() != false {
+		t.Errorf("QoS1: got %v, want %v", result.QoS1(), false)
 	}
-	if result.QoS2 != 1 {
-		t.Errorf("QoS2: got %q, want %q", result.QoS2, 1)
+	if result.QoS2() != true {
+		t.Errorf("QoS2: got %v, want %v", result.QoS2(), true)
 	}
-	if result.Retain != 0 {
-		t.Errorf("Retain: got %q, want %q", result.Retain, 0)
+	if result.Retain() != false {
+		t.Errorf("Retain: got %v, want %v", result.Retain(), false)
 	}
-	if result.RemainingLength != 1 {
-		t.Errorf("RemainingLength: got %q, want %q", result.RemainingLength, 0)
+	if result.RemainingLength() != 1 {
+		t.Errorf("RemainingLength: got %v, want %v", result.RemainingLength(), 1)
 	}
 	if !bytes.Equal(remains, []byte{0x00}) {
 		t.Errorf("remains: got %q, want %q", remains, []byte{0x00})
@@ -70,8 +70,8 @@ func TestPacketType(t *testing.T) {
 			if err != nil {
 				t.Errorf("ToFixedHeader() returns err: %v", err)
 			}
-			if result.PacketType != tt.want {
-				t.Errorf("PacketType: got %q, want %q", result.PacketType, tt.want)
+			if result.PacketType() != tt.want {
+				t.Errorf("PacketType: got %q, want %q", result.PacketType(), tt.want)
 			}
 		})
 	}
@@ -80,11 +80,11 @@ func TestPacketType(t *testing.T) {
 func TestDup(t *testing.T) {
 	var cases = []struct {
 		in   byte
-		want uint8
+		want bool
 	}{
-		{0x10, 0},
-		{0x18, 1},
-		{0x28, 1},
+		{0x10, false},
+		{0x18, true},
+		{0x28, true},
 	}
 	for _, tt := range cases {
 		t.Run(fmt.Sprintf("%X", tt.in), func(t *testing.T) {
@@ -93,8 +93,8 @@ func TestDup(t *testing.T) {
 			if err != nil {
 				t.Errorf("ToFixedHeader() returns err: %v", err)
 			}
-			if result.Dup != tt.want {
-				t.Errorf("Dup: got %q, want %q", result.Dup, tt.want)
+			if result.Dup() != tt.want {
+				t.Errorf("Dup: got %v, want %v", result.Dup(), tt.want)
 			}
 		})
 	}
@@ -103,10 +103,10 @@ func TestDup(t *testing.T) {
 func TestQoS1(t *testing.T) {
 	var cases = []struct {
 		in   byte
-		want uint8
+		want bool
 	}{
-		{0x10, 0},
-		{0x14, 1},
+		{0x10, false},
+		{0x14, true},
 	}
 	for _, tt := range cases {
 		t.Run(fmt.Sprintf("%X", tt.in), func(t *testing.T) {
@@ -115,8 +115,8 @@ func TestQoS1(t *testing.T) {
 			if err != nil {
 				t.Errorf("ToFixedHeader() returns err: %v", err)
 			}
-			if result.QoS1 != tt.want {
-				t.Errorf("QoS1: got %q, want %q", result.QoS1, tt.want)
+			if result.QoS1() != tt.want {
+				t.Errorf("QoS1: got %v, want %v", result.QoS1(), tt.want)
 			}
 		})
 	}
@@ -125,10 +125,10 @@ func TestQoS1(t *testing.T) {
 func TestQoS2(t *testing.T) {
 	var cases = []struct {
 		in   byte
-		want uint8
+		want bool
 	}{
-		{0x10, 0},
-		{0x12, 1},
+		{0x10, false},
+		{0x12, true},
 	}
 	for _, tt := range cases {
 		t.Run(fmt.Sprintf("%X", tt.in), func(t *testing.T) {
@@ -137,8 +137,8 @@ func TestQoS2(t *testing.T) {
 			if err != nil {
 				t.Errorf("ToFixedHeader() returns err: %v", err)
 			}
-			if result.QoS2 != tt.want {
-				t.Errorf("QoS2: got %q, want %q", result.QoS2, tt.want)
+			if result.QoS2() != tt.want {
+				t.Errorf("QoS2: got %v, want %v", result.QoS2(), tt.want)
 			}
 		})
 	}
@@ -147,10 +147,10 @@ func TestQoS2(t *testing.T) {
 func TestRetain(t *testing.T) {
 	var cases = []struct {
 		in   byte
-		want uint8
+		want bool
 	}{
-		{0x10, 0},
-		{0x11, 1},
+		{0x10, false},
+		{0x11, true},
 	}
 	for _, tt := range cases {
 		t.Run(fmt.Sprintf("%X", tt.in), func(t *testing.T) {
@@ -159,8 +159,8 @@ func TestRetain(t *testing.T) {
 			if err != nil {
 				t.Errorf("ToFixedHeader() returns err: %v", err)
 			}
-			if result.Retain != tt.want {
-				t.Errorf("Retain: got %q, want %q", result.Retain, tt.want)
+			if result.Retain() != tt.want {
+				t.Errorf("Retain: got %v, want %v", result.Retain(), tt.want)
 			}
 		})
 	}
@@ -190,8 +190,8 @@ func TestRemainingLength(t *testing.T) {
 			if err != nil {
 				t.Errorf("ToFixedHeader() returns err: %v", err)
 			}
-			if result.RemainingLength != tt.want {
-				t.Errorf("RemainingLength: got %v, want %v", result.RemainingLength, tt.want)
+			if result.RemainingLength() != tt.want {
+				t.Errorf("RemainingLength: got %v, want %v", result.RemainingLength(), tt.want)
 			}
 			if !bytes.Equal(resultRemains, wantRemains) {
 				t.Errorf("wantRemains: got %v, want %X", resultRemains, wantRemains)
