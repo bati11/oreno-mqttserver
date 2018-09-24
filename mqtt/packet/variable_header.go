@@ -14,6 +14,10 @@ func (h ConnectVariableHeader) ProtocolName() string {
 }
 
 func ToConnectVariableHeader(fixedHeader FixedHeader, bs []byte) (ConnectVariableHeader, error) {
+	if fixedHeader.PacketType() != CONNECT {
+		return ConnectVariableHeader{}, fmt.Errorf("packet type is invalid. it got is %v", fixedHeader.PacketType())
+	}
+
 	protocolName := bs[:6]
 	if !isValidProtocolName(protocolName) {
 		return ConnectVariableHeader{}, fmt.Errorf("protocol name is invalid. it got is %q", protocolName)
