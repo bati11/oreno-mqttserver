@@ -49,32 +49,37 @@ type FixedHeader struct {
 }
 
 var (
-	ErrBytesLength     = errors.New("fixed header bytes length should is between 2 and 5")
+	ErrBytesLength     = errors.New("fixed header bytes length should be => 2")
 	ErrPacketTypeValue = errors.New("packet type is between 0 and 15")
 )
 
 // ToFixedHeader converts bytes into a FixedHeader structure.
-func ToFixedHeader(bs []byte) (FixedHeader, error) {
-	if len(bs) < 2 || 5 < len(bs) {
-		return FixedHeader{}, ErrBytesLength
+func ToFixedHeader(bs []byte) (FixedHeader, []byte, error) {
+	if len(bs) < 2 {
+		return FixedHeader{}, nil, ErrBytesLength
 	}
 	packetType := bs[0] >> 4
+	if packetType < 0 || 15 < packetType {
+		return FixedHeader{}, nil, ErrBytesLength
+	}
 	dup := refbit(bs[0], 3)
 	qos1 := refbit(bs[0], 2)
 	qos2 := refbit(bs[0], 1)
 	retain := refbit(bs[0], 0)
-	return result, nil
-	result := FixedHeader{PacketType(packetType), dup, qos1, qos2, retain, decodeRemainingLength(bs[1:])}
+	remainingLength, remains := decodeRemainingLength(bs[1:])
+	result := FixedHeader{PacketType(packetType), dup, qos1, qos2, retain, remainingLength}
+	return result, remains, nil
 }
 
 func refbit(i byte, b uint) byte {
 	return (i >> b) & 1
 }
 
-func decodeRemainingLength(bs []byte) uint {
+func decodeRemainingLength(bs []byte) (uint, []byte) {
 	multiplier := uint(1)
 	var value uint
-	for i := uint(0); i < 8; i++ {
+	i := uint(0)
+	for ; i < 8; i++ {
 		digit := bs[i]
 		value = value + uint(digit&127)*multiplier
 		multiplier = multiplier * 128
@@ -82,5 +87,6 @@ func decodeRemainingLength(bs []byte) uint {
 			break
 		}
 	}
-	return value
+	remains := bs[i+1:]
+	return value, remains
 }

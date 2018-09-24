@@ -1,6 +1,7 @@
 package packet_test
 
 import (
+	"bytes"
 	"fmt"
 	"testing"
 
@@ -9,10 +10,11 @@ import (
 
 func TestToFixedHeader(t *testing.T) {
 	b1 := byte(0x12) // 0001 0 01 0
-	b2 := byte(0x00) // 00000000
-	in := []byte{b1, b2}
+	b2 := byte(0x01) // 00000000
+	b3 := byte(0x00)
+	in := []byte{b1, b2, b3}
 
-	result, err := packet.ToFixedHeader(in)
+	result, remains, err := packet.ToFixedHeader(in)
 	if err != nil {
 		t.Errorf("ToFixedHeader() returns err: %v", err)
 	}
@@ -31,8 +33,11 @@ func TestToFixedHeader(t *testing.T) {
 	if result.Retain != 0 {
 		t.Errorf("Retain: got %q, want %q", result.Retain, 0)
 	}
-	if result.RemainingLength != 0 {
+	if result.RemainingLength != 1 {
 		t.Errorf("RemainingLength: got %q, want %q", result.RemainingLength, 0)
+	}
+	if !bytes.Equal(remains, []byte{0x00}) {
+		t.Errorf("remains: got %q, want %q", remains, []byte{0x00})
 	}
 }
 
@@ -61,7 +66,7 @@ func TestPacketType(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(fmt.Sprintf("%X", tt.in), func(t *testing.T) {
 			bs := []byte{tt.in, 0x00}
-			result, err := packet.ToFixedHeader(bs)
+			result, _, err := packet.ToFixedHeader(bs)
 			if err != nil {
 				t.Errorf("ToFixedHeader() returns err: %v", err)
 			}
@@ -84,7 +89,7 @@ func TestDup(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(fmt.Sprintf("%X", tt.in), func(t *testing.T) {
 			bs := []byte{tt.in, 0x00}
-			result, err := packet.ToFixedHeader(bs)
+			result, _, err := packet.ToFixedHeader(bs)
 			if err != nil {
 				t.Errorf("ToFixedHeader() returns err: %v", err)
 			}
@@ -106,7 +111,7 @@ func TestQoS1(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(fmt.Sprintf("%X", tt.in), func(t *testing.T) {
 			bs := []byte{tt.in, 0x00}
-			result, err := packet.ToFixedHeader(bs)
+			result, _, err := packet.ToFixedHeader(bs)
 			if err != nil {
 				t.Errorf("ToFixedHeader() returns err: %v", err)
 			}
@@ -128,7 +133,7 @@ func TestQoS2(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(fmt.Sprintf("%X", tt.in), func(t *testing.T) {
 			bs := []byte{tt.in, 0x00}
-			result, err := packet.ToFixedHeader(bs)
+			result, _, err := packet.ToFixedHeader(bs)
 			if err != nil {
 				t.Errorf("ToFixedHeader() returns err: %v", err)
 			}
@@ -150,7 +155,7 @@ func TestRetain(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(fmt.Sprintf("%X", tt.in), func(t *testing.T) {
 			bs := []byte{tt.in, 0x00}
-			result, err := packet.ToFixedHeader(bs)
+			result, _, err := packet.ToFixedHeader(bs)
 			if err != nil {
 				t.Errorf("ToFixedHeader() returns err: %v", err)
 			}
@@ -179,12 +184,17 @@ func TestRemainingLength(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(fmt.Sprintf("%X", tt.in), func(t *testing.T) {
 			bs := append([]byte{0x10}, tt.in...)
-			result, err := packet.ToFixedHeader(bs)
+			wantRemains := []byte{0x20, 0x21, 0x22}
+			bs = append(bs, wantRemains...)
+			result, resultRemains, err := packet.ToFixedHeader(bs)
 			if err != nil {
 				t.Errorf("ToFixedHeader() returns err: %v", err)
 			}
 			if result.RemainingLength != tt.want {
 				t.Errorf("RemainingLength: got %v, want %v", result.RemainingLength, tt.want)
+			}
+			if !bytes.Equal(resultRemains, wantRemains) {
+				t.Errorf("wantRemains: got %v, want %X", resultRemains, wantRemains)
 			}
 		})
 	}
@@ -197,11 +207,10 @@ func TestErrorCase(t *testing.T) {
 	}{
 		{[]byte{}, packet.ErrBytesLength},
 		{[]byte{0x10}, packet.ErrBytesLength},
-		{[]byte{0x10, 0x80, 0x80, 0x80, 0x80, 0x01}, packet.ErrBytesLength},
 	}
 	for _, tt := range cases {
 		t.Run(fmt.Sprintf("%X", tt.in), func(t *testing.T) {
-			_, err := packet.ToFixedHeader(tt.in)
+			_, _, err := packet.ToFixedHeader(tt.in)
 			if err == nil {
 				t.Errorf("ToFixedHeader: got %v, want %v", err, tt.want)
 			}
