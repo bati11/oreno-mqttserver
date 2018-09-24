@@ -8,11 +8,7 @@ import (
 	"github.com/bati11/oreno-mqtt/mqtt/packet"
 )
 
-func TestToVariableHeader(t *testing.T) {
-	fb1 := byte(0x10) // 0001 0 00 0
-	fb2 := byte(0x01) // 00000000
-	fixedHeaderBytes := []byte{fb1, fb2}
-
+func sampleVariableHeaderBytes() []byte {
 	vb1 := byte(0x00)  // 00000000
 	vb2 := byte(0x04)  // 00000100
 	vb3 := byte('M')   // 01001101
@@ -23,7 +19,12 @@ func TestToVariableHeader(t *testing.T) {
 	vb8 := byte(0xCE)  // 11001110
 	vb9 := byte(0x00)  // 00000000
 	vb10 := byte(0x0A) // 00001010
-	variableHeaderBytes := []byte{vb1, vb2, vb3, vb4, vb5, vb6, vb7, vb8, vb9, vb10}
+	return []byte{vb1, vb2, vb3, vb4, vb5, vb6, vb7, vb8, vb9, vb10}
+}
+
+func TestToVariableHeader(t *testing.T) {
+	fixedHeaderBytes := []byte{0x10, 0x01}
+	variableHeaderBytes := sampleVariableHeaderBytes()
 
 	in := append(fixedHeaderBytes, variableHeaderBytes...)
 
@@ -47,18 +48,7 @@ func TestToVariableHeader(t *testing.T) {
 
 func TestToVariableHeaderInvalidPacketType(t *testing.T) {
 	fixedHeaderBytes := []byte{byte(packet.PUBLISH), 0x01}
-
-	vb1 := byte(0x00)  // 00000000
-	vb2 := byte(0x04)  // 00000100
-	vb3 := byte('M')   // 01001101
-	vb4 := byte('Q')   // 01010001
-	vb5 := byte('T')   // 01010100
-	vb6 := byte('T')   // 01010100
-	vb7 := byte(0x04)  // 00000100
-	vb8 := byte(0xCE)  // 11001110
-	vb9 := byte(0x00)  // 00000000
-	vb10 := byte(0x0A) // 00001010
-	variableHeaderBytes := []byte{vb1, vb2, vb3, vb4, vb5, vb6, vb7, vb8, vb9, vb10}
+	variableHeaderBytes := sampleVariableHeaderBytes()
 
 	in := append(fixedHeaderBytes, variableHeaderBytes...)
 
