@@ -13,6 +13,10 @@ func (h ConnectVariableHeader) ProtocolName() string {
 	return "MQTT"
 }
 
+func (h ConnectVariableHeader) ProtocolLevel() uint8 {
+	return 4
+}
+
 func ToConnectVariableHeader(fixedHeader FixedHeader, bs []byte) (ConnectVariableHeader, error) {
 	if fixedHeader.PacketType() != CONNECT {
 		return ConnectVariableHeader{}, fmt.Errorf("packet type is invalid. it got is %v", fixedHeader.PacketType())
@@ -23,8 +27,14 @@ func ToConnectVariableHeader(fixedHeader FixedHeader, bs []byte) (ConnectVariabl
 		return ConnectVariableHeader{}, fmt.Errorf("protocol name is invalid. it got is %q", protocolName)
 	}
 
+	protocolLevel := bs[6]
+	if protocolLevel != 4 {
+		return ConnectVariableHeader{}, fmt.Errorf("protocol level is not supported. it got is %v", protocolLevel)
+	}
+
 	result := ConnectVariableHeader{}
 	copy(result.protocolName[:], protocolName)
+	result.protocolLevel = protocolLevel
 	return result, nil
 }
 

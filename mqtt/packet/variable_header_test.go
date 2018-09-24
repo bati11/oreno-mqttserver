@@ -44,6 +44,9 @@ func TestToVariableHeader(t *testing.T) {
 	if variableHeader.ProtocolName() != "MQTT" {
 		t.Errorf("ProtocolName(): got %v, want %v", variableHeader.ProtocolName(), "MQTT")
 	}
+	if variableHeader.ProtocolLevel() != 4 {
+		t.Errorf("ProtocolLevel(): got %v, want %v", variableHeader.ProtocolLevel(), 4)
+	}
 }
 
 func TestToVariableHeaderInvalidPacketType(t *testing.T) {
@@ -96,6 +99,41 @@ func TestProtocolNameInConnect(t *testing.T) {
 			_, err = packet.ToConnectVariableHeader(fixedHeader, remains)
 			if err == nil {
 				t.Errorf("ToConnectVariableHeader() returns err: got nil, want error")
+			}
+		})
+	}
+}
+
+func TestProtocolLevelInConnect(t *testing.T) {
+	var cases = []struct {
+		in      byte
+		wantErr bool
+	}{
+		{3, true},
+		{4, false},
+		{5, true},
+	}
+	for _, tt := range cases {
+		t.Run(string(tt.in), func(t *testing.T) {
+			fixedHeaderBytes := []byte{0x10, 0x01}
+			variableHeaderBytes := sampleVariableHeaderBytes()
+			variableHeaderBytes[6] = tt.in
+
+			in := append(fixedHeaderBytes, variableHeaderBytes...)
+			fixedHeader, remains, err := packet.ToFixedHeader(in)
+			if err != nil {
+				t.Errorf("ToFixedHeader() returns err: %v", err)
+			}
+			if !bytes.Equal(remains, variableHeaderBytes) {
+				t.Errorf("remains: got %v, want %v", remains, variableHeaderBytes)
+			}
+
+			_, err = packet.ToConnectVariableHeader(fixedHeader, remains)
+			if tt.wantErr && (err == nil) {
+				t.Errorf("ToConnectVariableHeader() should returns err: but got nil")
+			}
+			if !tt.wantErr && (err != nil) {
+				t.Errorf("ToConnectVariableHeader() should not returns err: but got %v", err)
 			}
 		})
 	}
