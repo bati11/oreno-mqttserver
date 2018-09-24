@@ -138,3 +138,37 @@ func TestProtocolLevelInConnect(t *testing.T) {
 		})
 	}
 }
+
+func TestReservedValueInConnectFlagsInConnect(t *testing.T) {
+	var cases = []struct {
+		in      byte
+		wantErr bool
+	}{
+		{0, false},
+		{1, true},
+	}
+	for _, tt := range cases {
+		t.Run(string(tt.in), func(t *testing.T) {
+			fixedHeaderBytes := []byte{0x10, 0x01}
+			variableHeaderBytes := sampleVariableHeaderBytes()
+			variableHeaderBytes[7] = tt.in
+
+			in := append(fixedHeaderBytes, variableHeaderBytes...)
+			fixedHeader, remains, err := packet.ToFixedHeader(in)
+			if err != nil {
+				t.Errorf("ToFixedHeader() returns err: %v", err)
+			}
+			if !bytes.Equal(remains, variableHeaderBytes) {
+				t.Errorf("remains: got %v, want %v", remains, variableHeaderBytes)
+			}
+
+			_, err = packet.ToConnectVariableHeader(fixedHeader, remains)
+			if tt.wantErr && (err == nil) {
+				t.Errorf("ToConnectVariableHeader() should returns err: but got nil")
+			}
+			if !tt.wantErr && (err != nil) {
+				t.Errorf("ToConnectVariableHeader() should not returns err: but got %v", err)
+			}
+		})
+	}
+}

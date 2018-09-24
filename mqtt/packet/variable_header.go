@@ -32,6 +32,12 @@ func ToConnectVariableHeader(fixedHeader FixedHeader, bs []byte) (ConnectVariabl
 		return ConnectVariableHeader{}, fmt.Errorf("protocol level is not supported. it got is %v", protocolLevel)
 	}
 
+	connectFlags := bs[7]
+	reserved := connectFlags & 1
+	if reserved != 0 {
+		return ConnectVariableHeader{}, fmt.Errorf("reserved value in connect flags must be 0. it got is %v", reserved)
+	}
+
 	result := ConnectVariableHeader{}
 	copy(result.protocolName[:], protocolName)
 	result.protocolLevel = protocolLevel
