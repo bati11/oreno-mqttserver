@@ -39,23 +39,24 @@ func TestToFixedHeader(t *testing.T) {
 func TestPacketType(t *testing.T) {
 	var cases = []struct {
 		in   byte
-		want uint8
+		want packet.PacketType
 	}{
-		{0x10, 1},
-		{0x20, 2},
-		{0x30, 3},
-		{0x40, 4},
-		{0x50, 5},
-		{0x60, 6},
-		{0x70, 7},
-		{0x80, 8},
-		{0x90, 9},
-		{0xA0, 10},
-		{0xB0, 11},
-		{0xC0, 12},
-		{0xD0, 13},
-		{0xE0, 14},
-		{0xF0, 15},
+		{0x00, packet.Reserved},
+		{0x10, packet.CONNECT},
+		{0x20, packet.CONNACK},
+		{0x30, packet.PUBLISH},
+		{0x40, packet.PUBACK},
+		{0x50, packet.PUBREC},
+		{0x60, packet.PUBREL},
+		{0x70, packet.PUBCOMP},
+		{0x80, packet.SUBSCRIBE},
+		{0x90, packet.SUBACK},
+		{0xA0, packet.UNSUBSCRIBE},
+		{0xB0, packet.UNSUBACK},
+		{0xC0, packet.PINGREQ},
+		{0xD0, packet.PINGRESP},
+		{0xE0, packet.DISCONNECT},
+		{0xF0, packet.Reserved2},
 	}
 	for _, tt := range cases {
 		t.Run(fmt.Sprintf("%X", tt.in), func(t *testing.T) {

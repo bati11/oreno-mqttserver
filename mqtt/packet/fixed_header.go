@@ -6,9 +6,41 @@ package packet
 
 import "errors"
 
+type PacketType uint8
+
+const (
+	Reserved PacketType = iota
+	CONNECT
+	CONNACK
+	PUBLISH
+	PUBACK
+	PUBREC
+	PUBREL
+	PUBCOMP
+	SUBSCRIBE
+	SUBACK
+	UNSUBSCRIBE
+	UNSUBACK
+	PINGREQ
+	PINGRESP
+	DISCONNECT
+	Reserved2
+)
+
+func (p PacketType) string() string {
+	switch p {
+	case Reserved:
+		return "Reserved"
+	case CONNECT:
+		return "CONNECT"
+	default:
+		return "unknown"
+	}
+}
+
 // FixedHeader is part of MQTT Control Packet.
 type FixedHeader struct {
-	PacketType      uint8
+	PacketType      PacketType
 	Dup             byte
 	QoS1            byte
 	QoS2            byte
@@ -16,7 +48,10 @@ type FixedHeader struct {
 	RemainingLength uint
 }
 
-var ErrBytesLength = errors.New("fixed header bytes length is between 2 and 5")
+var (
+	ErrBytesLength     = errors.New("fixed header bytes length should is between 2 and 5")
+	ErrPacketTypeValue = errors.New("packet type is between 0 and 15")
+)
 
 // ToFixedHeader converts bytes into a FixedHeader structure.
 func ToFixedHeader(bs []byte) (FixedHeader, error) {
@@ -28,8 +63,8 @@ func ToFixedHeader(bs []byte) (FixedHeader, error) {
 	qos1 := refbit(bs[0], 2)
 	qos2 := refbit(bs[0], 1)
 	retain := refbit(bs[0], 0)
-	result := FixedHeader{packetType, dup, qos1, qos2, retain, decodeRemainingLength(bs[1:])}
 	return result, nil
+	result := FixedHeader{PacketType(packetType), dup, qos1, qos2, retain, decodeRemainingLength(bs[1:])}
 }
 
 func refbit(i byte, b uint) byte {
