@@ -3,12 +3,18 @@ package packet
 import "fmt"
 
 type ConnectFlags struct {
+	CleanSession bool
+	WillFlag     bool
+	WillQoS      byte
+	WillRetain   bool
+	PasswordFlag bool
+	UserNameFlag bool
 }
 
 type ConnectVariableHeader struct {
 	ProtocolName  string
 	ProtocolLevel uint8
-	ConnectFlags  byte
+	ConnectFlags  ConnectFlags
 	KeepAlive     uint16
 }
 
@@ -27,15 +33,61 @@ func ToConnectVariableHeader(fixedHeader FixedHeader, bs []byte) (ConnectVariabl
 		return ConnectVariableHeader{}, fmt.Errorf("protocol level is not supported. it got is %v", protocolLevel)
 	}
 
-	connectFlags := bs[7]
-	reserved := connectFlags & 1
+	connectFlagsBytes := bs[7]
+	reserved := connectFlagsBytes & 1
 	if reserved != 0 {
 		return ConnectVariableHeader{}, fmt.Errorf("reserved value in connect flags must be 0. it got is %v", reserved)
 	}
 
+	connectFlags := ConnectFlags{}
+
+	// TODO now, support only 1
+	cleanSession := refbit(connectFlagsBytes, 1)
+	if cleanSession != 1 {
+		return ConnectVariableHeader{}, fmt.Errorf("clean session value in connect flags must be 1. it got is %v", cleanSession)
+	}
+	connectFlags.CleanSession = true
+
+	// TODO now, support only 0
+	willFlag := refbit(connectFlagsBytes, 2)
+	if willFlag != 0 {
+		return ConnectVariableHeader{}, fmt.Errorf("will flag value in connect flags must be 0. it got is %v", willFlag)
+	}
+	connectFlags.WillFlag = false
+
+	// TODO now, support only QoS0
+	willQoS2 := refbit(connectFlagsBytes, 3)
+	willQoS1 := refbit(connectFlagsBytes, 4)
+	if willQoS2 != 0 || willQoS1 != 0 {
+		return ConnectVariableHeader{}, fmt.Errorf("will QoS value in connect flags must be 0. it got is %v %v", willQoS1, willQoS2)
+	}
+	connectFlags.WillQoS = 0
+
+	// TODO now, support only 0
+	willRetain := refbit(connectFlagsBytes, 5)
+	if willRetain != 0 {
+		return ConnectVariableHeader{}, fmt.Errorf("will retain value in connect flags must be 0. it got is %v", willRetain)
+	}
+	connectFlags.WillRetain = false
+
+	// TODO now, support only 0
+	passwordFlag := refbit(connectFlagsBytes, 6)
+	if passwordFlag != 0 {
+		return ConnectVariableHeader{}, fmt.Errorf("password flag value in connect flags must be 0. it got is %v", passwordFlag)
+	}
+	connectFlags.PasswordFlag = false
+
+	// TODO now, support only 0
+	userNameFlag := refbit(connectFlagsBytes, 7)
+	if userNameFlag != 0 {
+		return ConnectVariableHeader{}, fmt.Errorf("user name flag value in connect flags must be 0. it got is %v", userNameFlag)
+	}
+	connectFlags.UserNameFlag = false
+
 	result := ConnectVariableHeader{
 		ProtocolName:  "MQTT",
 		ProtocolLevel: 4,
+		ConnectFlags:  connectFlags,
 	}
 	return result, nil
 }
