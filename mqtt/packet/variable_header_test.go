@@ -41,11 +41,11 @@ func TestToVariableHeader(t *testing.T) {
 		t.Errorf("ToConnectVariableHeader() returns err: %v", err)
 	}
 
-	if variableHeader.ProtocolName() != "MQTT" {
-		t.Errorf("ProtocolName(): got %v, want %v", variableHeader.ProtocolName(), "MQTT")
+	if variableHeader.ProtocolName != "MQTT" {
+		t.Errorf("ProtocolName(): got %v, want %v", variableHeader.ProtocolName, "MQTT")
 	}
-	if variableHeader.ProtocolLevel() != 4 {
-		t.Errorf("ProtocolLevel(): got %v, want %v", variableHeader.ProtocolLevel(), 4)
+	if variableHeader.ProtocolLevel != 4 {
+		t.Errorf("ProtocolLevel(): got %v, want %v", variableHeader.ProtocolLevel, 4)
 	}
 }
 

@@ -2,19 +2,14 @@ package packet
 
 import "fmt"
 
+type ConnectFlags struct {
+}
+
 type ConnectVariableHeader struct {
-	protocolName  [6]byte
-	protocolLevel byte
-	connectFlags  byte
-	keepAlive     [2]byte
-}
-
-func (h ConnectVariableHeader) ProtocolName() string {
-	return "MQTT"
-}
-
-func (h ConnectVariableHeader) ProtocolLevel() uint8 {
-	return 4
+	ProtocolName  string
+	ProtocolLevel uint8
+	ConnectFlags  byte
+	KeepAlive     uint16
 }
 
 func ToConnectVariableHeader(fixedHeader FixedHeader, bs []byte) (ConnectVariableHeader, error) {
@@ -38,9 +33,10 @@ func ToConnectVariableHeader(fixedHeader FixedHeader, bs []byte) (ConnectVariabl
 		return ConnectVariableHeader{}, fmt.Errorf("reserved value in connect flags must be 0. it got is %v", reserved)
 	}
 
-	result := ConnectVariableHeader{}
-	copy(result.protocolName[:], protocolName)
-	result.protocolLevel = protocolLevel
+	result := ConnectVariableHeader{
+		ProtocolName:  "MQTT",
+		ProtocolLevel: 4,
+	}
 	return result, nil
 }
 
