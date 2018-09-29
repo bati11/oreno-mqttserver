@@ -18,20 +18,20 @@ func TestToFixedHeader(t *testing.T) {
 	if err != nil {
 		t.Errorf("ToFixedHeader() returns err: %v", err)
 	}
-	if result.PacketType() != 1 {
-		t.Errorf("PacketType: got %v, want %v", result.PacketType(), 1)
+	if result.PacketType != 1 {
+		t.Errorf("PacketType: got %v, want %v", result.PacketType, 1)
 	}
-	if result.Dup() != false {
-		t.Errorf("Dup: got %v, want %v", result.Dup(), false)
+	if result.Dup != false {
+		t.Errorf("Dup: got %v, want %v", result.Dup, false)
 	}
-	if result.QoS1() != false {
-		t.Errorf("QoS1: got %v, want %v", result.QoS1(), false)
+	if result.QoS1 != false {
+		t.Errorf("QoS1: got %v, want %v", result.QoS1, false)
 	}
-	if result.QoS2() != true {
-		t.Errorf("QoS2: got %v, want %v", result.QoS2(), true)
+	if result.QoS2 != true {
+		t.Errorf("QoS2: got %v, want %v", result.QoS2, true)
 	}
-	if result.Retain() != false {
-		t.Errorf("Retain: got %v, want %v", result.Retain(), false)
+	if result.Retain != false {
+		t.Errorf("Retain: got %v, want %v", result.Retain, false)
 	}
 	if result.RemainingLength() != 1 {
 		t.Errorf("RemainingLength: got %v, want %v", result.RemainingLength(), 1)
@@ -70,8 +70,8 @@ func TestPacketType(t *testing.T) {
 			if err != nil {
 				t.Errorf("ToFixedHeader() returns err: %v", err)
 			}
-			if result.PacketType() != tt.want {
-				t.Errorf("PacketType: got %q, want %q", result.PacketType(), tt.want)
+			if result.PacketType != tt.want {
+				t.Errorf("PacketType: got %q, want %q", result.PacketType, tt.want)
 			}
 		})
 	}
@@ -93,8 +93,8 @@ func TestDup(t *testing.T) {
 			if err != nil {
 				t.Errorf("ToFixedHeader() returns err: %v", err)
 			}
-			if result.Dup() != tt.want {
-				t.Errorf("Dup: got %v, want %v", result.Dup(), tt.want)
+			if result.Dup != tt.want {
+				t.Errorf("Dup: got %v, want %v", result.Dup, tt.want)
 			}
 		})
 	}
@@ -115,8 +115,8 @@ func TestQoS1(t *testing.T) {
 			if err != nil {
 				t.Errorf("ToFixedHeader() returns err: %v", err)
 			}
-			if result.QoS1() != tt.want {
-				t.Errorf("QoS1: got %v, want %v", result.QoS1(), tt.want)
+			if result.QoS1 != tt.want {
+				t.Errorf("QoS1: got %v, want %v", result.QoS1, tt.want)
 			}
 		})
 	}
@@ -137,8 +137,8 @@ func TestQoS2(t *testing.T) {
 			if err != nil {
 				t.Errorf("ToFixedHeader() returns err: %v", err)
 			}
-			if result.QoS2() != tt.want {
-				t.Errorf("QoS2: got %v, want %v", result.QoS2(), tt.want)
+			if result.QoS2 != tt.want {
+				t.Errorf("QoS2: got %v, want %v", result.QoS2, tt.want)
 			}
 		})
 	}
@@ -159,8 +159,8 @@ func TestRetain(t *testing.T) {
 			if err != nil {
 				t.Errorf("ToFixedHeader() returns err: %v", err)
 			}
-			if result.Retain() != tt.want {
-				t.Errorf("Retain: got %v, want %v", result.Retain(), tt.want)
+			if result.Retain != tt.want {
+				t.Errorf("Retain: got %v, want %v", result.Retain, tt.want)
 			}
 		})
 	}

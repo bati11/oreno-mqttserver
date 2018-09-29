@@ -40,29 +40,12 @@ func (p PacketType) string() string {
 
 // FixedHeader is part of MQTT Control Packet.
 type FixedHeader struct {
-	byte1           byte
+	PacketType      PacketType
+	Dup             bool
+	QoS1            bool
+	QoS2            bool
+	Retain          bool
 	remainingLength uint
-}
-
-func (h FixedHeader) PacketType() PacketType {
-	b := h.byte1 >> 4
-	return PacketType(b)
-}
-
-func (h FixedHeader) Dup() bool {
-	return refbit(h.byte1, 3) > 0
-}
-
-func (h FixedHeader) QoS1() bool {
-	return refbit(h.byte1, 2) > 0
-}
-
-func (h FixedHeader) QoS2() bool {
-	return refbit(h.byte1, 1) > 0
-}
-
-func (h FixedHeader) Retain() bool {
-	return refbit(h.byte1, 0) > 0
 }
 
 func (h FixedHeader) RemainingLength() uint {
@@ -83,8 +66,19 @@ func ToFixedHeader(bs []byte) (FixedHeader, []byte, error) {
 	if packetType < 0 || 15 < packetType {
 		return FixedHeader{}, nil, ErrBytesLength
 	}
+	dup := refbit(bs[0], 3) > 0
+	qos1 := refbit(bs[0], 2) > 0
+	qos2 := refbit(bs[0], 1) > 0
+	retain := refbit(bs[0], 0) > 0
 	remainingLength, remains := decodeRemainingLength(bs[1:])
-	result := FixedHeader{bs[0], remainingLength}
+	result := FixedHeader{
+		PacketType:      PacketType(packetType),
+		Dup:             dup,
+		QoS1:            qos1,
+		QoS2:            qos2,
+		Retain:          retain,
+		remainingLength: remainingLength,
+	}
 	return result, remains, nil
 }
 

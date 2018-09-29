@@ -22,8 +22,8 @@ type ConnectVariableHeader struct {
 }
 
 func ToConnectVariableHeader(fixedHeader FixedHeader, bs []byte) (ConnectVariableHeader, error) {
-	if fixedHeader.PacketType() != CONNECT {
-		return ConnectVariableHeader{}, fmt.Errorf("packet type is invalid. it got is %v", fixedHeader.PacketType())
+	if fixedHeader.PacketType != CONNECT {
+		return ConnectVariableHeader{}, fmt.Errorf("packet type is invalid. it got is %v", fixedHeader.PacketType)
 	}
 
 	protocolName := bs[:6]
