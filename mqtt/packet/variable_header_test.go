@@ -28,15 +28,18 @@ func TestToVariableHeader(t *testing.T) {
 
 	in := append(fixedHeaderBytes, variableHeaderBytes...)
 
+	payload := []byte{0x00, 0x04, 'h', 'o', 'g', 'e'}
+	in = append(in, payload...)
+
 	fixedHeader, remains, err := packet.ToFixedHeader(in)
 	if err != nil {
 		t.Errorf("ToFixedHeader() returns err: %v", err)
 	}
-	if !bytes.Equal(remains, variableHeaderBytes) {
-		t.Errorf("remains: got %v, want %v", remains, variableHeaderBytes)
+	if !bytes.Equal(remains, append(variableHeaderBytes, payload...)) {
+		t.Errorf("remains: got %v, want %v", remains, append(variableHeaderBytes, payload...))
 	}
 
-	variableHeader, err := packet.ToConnectVariableHeader(fixedHeader, remains)
+	variableHeader, remains, err := packet.ToConnectVariableHeader(fixedHeader, remains)
 	if err != nil {
 		t.Errorf("ToConnectVariableHeader returns err: %v", err)
 	}
@@ -68,6 +71,9 @@ func TestToVariableHeader(t *testing.T) {
 	if variableHeader.KeepAlive != 60 {
 		t.Errorf("KeepAlive: got %v, want %v", variableHeader.KeepAlive, 60)
 	}
+	if !bytes.Equal(remains, payload) {
+		t.Errorf("remains: got %v, want: %v", remains, payload)
+	}
 }
 
 func TestToVariableHeaderInvalidPacketType(t *testing.T) {
@@ -84,7 +90,7 @@ func TestToVariableHeaderInvalidPacketType(t *testing.T) {
 		t.Errorf("remains: got %v, want %v", remains, variableHeaderBytes)
 	}
 
-	_, err = packet.ToConnectVariableHeader(fixedHeader, remains)
+	_, _, err = packet.ToConnectVariableHeader(fixedHeader, remains)
 	if err == nil {
 		t.Errorf("ToConnectVariableHeader() returns err: got nil, want err")
 	}
@@ -117,7 +123,7 @@ func TestProtocolNameInConnect(t *testing.T) {
 				t.Errorf("remains: got %v, want %v", remains, variableHeaderBytes)
 			}
 
-			_, err = packet.ToConnectVariableHeader(fixedHeader, remains)
+			_, _, err = packet.ToConnectVariableHeader(fixedHeader, remains)
 			if err == nil {
 				t.Errorf("ToConnectVariableHeader() returns err: got nil, want error")
 			}
@@ -149,7 +155,7 @@ func TestProtocolLevelInConnect(t *testing.T) {
 				t.Errorf("remains: got %v, want %v", remains, variableHeaderBytes)
 			}
 
-			_, err = packet.ToConnectVariableHeader(fixedHeader, remains)
+			_, _, err = packet.ToConnectVariableHeader(fixedHeader, remains)
 			if tt.wantErr && (err == nil) {
 				t.Errorf("ToConnectVariableHeader() should returns err: but got nil")
 			}
@@ -183,7 +189,7 @@ func TestReservedValueInConnectFlagsInConnect(t *testing.T) {
 				t.Errorf("remains: got %v, want %v", remains, variableHeaderBytes)
 			}
 
-			_, err = packet.ToConnectVariableHeader(fixedHeader, remains)
+			_, _, err = packet.ToConnectVariableHeader(fixedHeader, remains)
 			if tt.wantErr && (err == nil) {
 				t.Errorf("ToConnectVariableHeader() should returns err: but got nil")
 			}
