@@ -1,6 +1,9 @@
 package packet
 
-import "fmt"
+import (
+	"encoding/binary"
+	"fmt"
+)
 
 type ConnectFlags struct {
 	CleanSession bool
@@ -84,10 +87,13 @@ func ToConnectVariableHeader(fixedHeader FixedHeader, bs []byte) (ConnectVariabl
 	}
 	connectFlags.UserNameFlag = false
 
+	keepAlive := binary.BigEndian.Uint16(bs[8:10])
+
 	result := ConnectVariableHeader{
 		ProtocolName:  "MQTT",
 		ProtocolLevel: 4,
 		ConnectFlags:  connectFlags,
+		KeepAlive:     keepAlive,
 	}
 	return result, nil
 }

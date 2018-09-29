@@ -18,7 +18,7 @@ func sampleVariableHeaderBytes() []byte {
 	vb7 := byte(0x04)  // 00000100
 	vb8 := byte(0x02)  // 00000010
 	vb9 := byte(0x00)  // 00000000
-	vb10 := byte(0x0A) // 00001010
+	vb10 := byte(0x3C) // 00031100
 	return []byte{vb1, vb2, vb3, vb4, vb5, vb6, vb7, vb8, vb9, vb10}
 }
 
@@ -64,6 +64,9 @@ func TestToVariableHeader(t *testing.T) {
 	}
 	if variableHeader.ConnectFlags.UserNameFlag != false {
 		t.Errorf("ConnectFlags.UserNameFlag: got %v, want %v", variableHeader.ConnectFlags.UserNameFlag, false)
+	}
+	if variableHeader.KeepAlive != 60 {
+		t.Errorf("KeepAlive: got %v, want %v", variableHeader.KeepAlive, 60)
 	}
 }
 
