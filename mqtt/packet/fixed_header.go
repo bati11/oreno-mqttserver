@@ -45,11 +45,7 @@ type FixedHeader struct {
 	QoS1            bool
 	QoS2            bool
 	Retain          bool
-	remainingLength uint
-}
-
-func (h FixedHeader) RemainingLength() uint {
-	return h.remainingLength
+	RemainingLength uint
 }
 
 var (
@@ -77,7 +73,7 @@ func ToFixedHeader(bs []byte) (FixedHeader, []byte, error) {
 		QoS1:            qos1,
 		QoS2:            qos2,
 		Retain:          retain,
-		remainingLength: remainingLength,
+		RemainingLength: remainingLength,
 	}
 	return result, remains, nil
 }

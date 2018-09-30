@@ -33,8 +33,8 @@ func TestToFixedHeader(t *testing.T) {
 	if result.Retain != false {
 		t.Errorf("Retain: got %v, want %v", result.Retain, false)
 	}
-	if result.RemainingLength() != 1 {
-		t.Errorf("RemainingLength: got %v, want %v", result.RemainingLength(), 1)
+	if result.RemainingLength != 1 {
+		t.Errorf("RemainingLength: got %v, want %v", result.RemainingLength, 1)
 	}
 	if !bytes.Equal(remains, []byte{0x00}) {
 		t.Errorf("remains: got %q, want %q", remains, []byte{0x00})
@@ -190,8 +190,8 @@ func TestRemainingLength(t *testing.T) {
 			if err != nil {
 				t.Errorf("ToFixedHeader() returns err: %v", err)
 			}
-			if result.RemainingLength() != tt.want {
-				t.Errorf("RemainingLength: got %v, want %v", result.RemainingLength(), tt.want)
+			if result.RemainingLength != tt.want {
+				t.Errorf("RemainingLength: got %v, want %v", result.RemainingLength, tt.want)
 			}
 			if !bytes.Equal(resultRemains, wantRemains) {
 				t.Errorf("wantRemains: got %v, want %X", resultRemains, wantRemains)
