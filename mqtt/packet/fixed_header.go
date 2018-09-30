@@ -4,7 +4,10 @@ Package packet implements packets of MQTT.
 */
 package packet
 
-import "errors"
+import (
+	"encoding/binary"
+	"errors"
+)
 
 type PacketType uint8
 
@@ -36,6 +39,10 @@ func (p PacketType) string() string {
 	default:
 		return "unknown"
 	}
+}
+
+func (p PacketType) byte() byte {
+	return byte(p)
 }
 
 // FixedHeader is part of MQTT Control Packet.
@@ -78,8 +85,33 @@ func ToFixedHeader(bs []byte) (FixedHeader, []byte, error) {
 	return result, remains, nil
 }
 
-func refbit(i byte, b uint) byte {
-	return (i >> b) & 1
+func (h *FixedHeader) ToBytes() []byte {
+	var result []byte
+	b := h.PacketType.byte() << 4
+	if h.Dup {
+		b = onbit(b, 4)
+	}
+	if h.QoS1 {
+		b = onbit(b, 2)
+	}
+	if h.QoS2 {
+		b = onbit(b, 1)
+	}
+	if h.Retain {
+		b = onbit(b, 0)
+	}
+	result = append(result, b)
+	remainingLength := h.encodeRemainingLength()
+	result = append(result, remainingLength...)
+	return result
+}
+
+func refbit(b byte, i uint) byte {
+	return (b >> i) & 1
+}
+
+func onbit(b byte, i uint) byte {
+	return b | (1 << i)
 }
 
 func decodeRemainingLength(bs []byte) (uint, []byte) {
@@ -96,4 +128,21 @@ func decodeRemainingLength(bs []byte) (uint, []byte) {
 	}
 	remains := bs[i+1:]
 	return value, remains
+}
+
+func (h *FixedHeader) encodeRemainingLength() []byte {
+	x := h.RemainingLength
+	var encodedByte uint64
+	for {
+		encodedByte = uint64(x % 128)
+		x = x / 128
+		if x > 0 {
+			encodedByte = encodedByte | 128
+		} else {
+			break
+		}
+	}
+	buf := make([]byte, binary.MaxVarintLen32)
+	n := binary.PutUvarint(buf, encodedByte)
+	return buf[:n]
 }

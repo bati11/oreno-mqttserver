@@ -217,3 +217,23 @@ func TestErrorCase(t *testing.T) {
 		})
 	}
 }
+
+func TestFixedHeaderToBytes(t *testing.T) {
+	cases := []struct {
+		in        packet.FixedHeader
+		want      []byte
+		wantError bool
+	}{
+		{
+			packet.FixedHeader{packet.CONNACK, false, false, false, false, 2},
+			[]byte{0x20, 0x02},
+			false,
+		},
+	}
+	for _, tt := range cases {
+		result := tt.in.ToBytes()
+		if !bytes.Equal(result, tt.want) {
+			t.Fatalf("got %v, want %v", result, tt.want)
+		}
+	}
+}
