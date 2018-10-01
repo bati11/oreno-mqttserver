@@ -21,6 +21,22 @@ type ConnectVariableHeader struct {
 	KeepAlive     uint16
 }
 
+type ConnackVariableHeader struct {
+	SessionPresent bool
+	ReturnCode     uint8
+}
+
+func (h *ConnackVariableHeader) ToBytes() []byte {
+	var result []byte
+	if h.SessionPresent {
+		result = append(result, 1)
+	} else {
+		result = append(result, 0)
+	}
+	result = append(result, h.ReturnCode)
+	return result
+}
+
 func ToConnectVariableHeader(fixedHeader FixedHeader, bs []byte) (ConnectVariableHeader, []byte, error) {
 	if fixedHeader.PacketType != CONNECT {
 		return ConnectVariableHeader{}, nil, fmt.Errorf("packet type is invalid. it got is %v", fixedHeader.PacketType)
