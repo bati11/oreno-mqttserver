@@ -3,6 +3,7 @@ package packet_test
 import (
 	"bytes"
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/bati11/oreno-mqtt/mqtt/packet"
@@ -197,5 +198,22 @@ func TestReservedValueInConnectFlagsInConnect(t *testing.T) {
 				t.Errorf("ToConnectVariableHeader() should not returns err: but got %v", err)
 			}
 		})
+	}
+}
+
+func TestToStructRevertToByteArray(t *testing.T) {
+	variableHeaderBytes := sampleVariableHeaderBytes()
+
+	fixHeader := packet.FixedHeader{
+		PacketType:      packet.CONNECT,
+		RemainingLength: uint(len(variableHeaderBytes)),
+	}
+
+	s, _, err := packet.ToConnectVariableHeader(fixHeader, variableHeaderBytes)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	if !reflect.DeepEqual(s.ToBytes(), variableHeaderBytes) {
+		t.Fatalf("want %v, got %v", variableHeaderBytes, s.ToBytes())
 	}
 }

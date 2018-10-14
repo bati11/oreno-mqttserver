@@ -14,11 +14,58 @@ type ConnectFlags struct {
 	UserNameFlag bool
 }
 
+func (c *ConnectFlags) ToBytes() []byte {
+	var b byte
+	if c.CleanSession {
+		b = onbit(b, 1)
+	}
+	if c.WillFlag {
+		b = onbit(b, 2)
+	}
+	switch c.WillQoS {
+	case 0:
+	case 1:
+		b = onbit(b, 3)
+	case 2:
+		b = onbit(b, 4)
+	case 3:
+		b = onbit(b, 3)
+		b = onbit(b, 4)
+	}
+	if c.WillRetain {
+		b = onbit(b, 5)
+	}
+	if c.PasswordFlag {
+		b = onbit(b, 6)
+	}
+	if c.UserNameFlag {
+		b = onbit(b, 7)
+	}
+	return []byte{b}
+}
+
 type ConnectVariableHeader struct {
 	ProtocolName  string
 	ProtocolLevel uint8
 	ConnectFlags  ConnectFlags
 	KeepAlive     uint16
+}
+
+func (h *ConnectVariableHeader) ToBytes() []byte {
+	var result []byte
+	result = append(result, 0)
+	result = append(result, 4)
+	result = append(result, []byte(h.ProtocolName)...)
+
+	result = append(result, h.ProtocolLevel)
+
+	result = append(result, h.ConnectFlags.ToBytes()...)
+
+	keepAlive := make([]byte, 2)
+	binary.BigEndian.PutUint16(keepAlive, h.KeepAlive)
+	result = append(result, keepAlive...)
+
+	return result
 }
 
 type ConnackVariableHeader struct {
