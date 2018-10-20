@@ -8,8 +8,11 @@ import (
 
 func HandleConnect(fixedHeader packet.FixedHeader, remains []byte) (packet.Connack, error) {
 	variableHeader, remains, err := packet.ToConnectVariableHeader(fixedHeader, remains)
-	if err != nil {
+	switch err.(type) {
+	case *packet.ConnectError:
 		return packet.NewConnackForRefusedByUnacceptableProtocolVersion(), nil
+	case error:
+		return packet.Connack{}, err
 	}
 	payload, err := packet.ToConnectPayload(remains)
 	if err != nil {
