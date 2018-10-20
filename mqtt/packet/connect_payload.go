@@ -3,6 +3,7 @@ package packet
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"regexp"
 )
 
@@ -14,7 +15,7 @@ func (c *ConnectPayload) ToBytes() []byte {
 	return []byte(c.ClientID)
 }
 
-var clientIDRegex = regexp.MustCompile("^[a-zA-Z0-9]*$")
+var clientIDRegex = regexp.MustCompile("^[a-zA-Z0-9-|]*$")
 
 var (
 	ErrConnectPayloadLength = errors.New("payload length of connect packet is invalid")
@@ -32,6 +33,7 @@ func ToConnectPayload(bs []byte) (ConnectPayload, error) {
 	} else {
 		s = string(bs[2 : 2+length])
 	}
+	fmt.Println(s)
 	if len(s) < 1 || len(s) > 23 {
 		return ConnectPayload{}, ErrClientIDFormat
 	}

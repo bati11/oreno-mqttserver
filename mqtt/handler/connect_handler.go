@@ -10,12 +10,14 @@ func HandleConnect(fixedHeader packet.FixedHeader, remains []byte) (packet.Conna
 	variableHeader, remains, err := packet.ToConnectVariableHeader(fixedHeader, remains)
 	switch err.(type) {
 	case *packet.ConnectError:
+		fmt.Printf("%#v\n", err)
 		return packet.NewConnackForRefusedByUnacceptableProtocolVersion(), nil
 	case error:
 		return packet.Connack{}, err
 	}
 	payload, err := packet.ToConnectPayload(remains)
 	if err != nil {
+		fmt.Printf("%#v\n", err)
 		return packet.NewConnackForRefusedByIdentifierRejected(), nil
 	}
 	fmt.Printf("fixedHeader: %+v\n", fixedHeader)
