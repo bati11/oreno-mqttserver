@@ -10,6 +10,10 @@ type ConnectPayload struct {
 	ClientID string
 }
 
+func (c *ConnectPayload) ToBytes() []byte {
+	return []byte(c.ClientID)
+}
+
 var clientIDRegex = regexp.MustCompile("^[a-zA-Z0-9]*$")
 
 var (

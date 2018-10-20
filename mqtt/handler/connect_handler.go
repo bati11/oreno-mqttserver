@@ -1,0 +1,23 @@
+package handler
+
+import (
+	"fmt"
+
+	"github.com/bati11/oreno-mqtt/mqtt/packet"
+)
+
+func HandleConnect(fixedHeader packet.FixedHeader, remains []byte) (packet.Connack, error) {
+	variableHeader, remains, err := packet.ToConnectVariableHeader(fixedHeader, remains)
+	if err != nil {
+		return packet.NewConnackForRefusedByUnacceptableProtocolVersion(), nil
+	}
+	payload, err := packet.ToConnectPayload(remains)
+	if err != nil {
+		return packet.NewConnackForRefusedByIdentifierRejected(), nil
+	}
+	fmt.Printf("fixedHeader: %+v\n", fixedHeader)
+	fmt.Printf("variableHeader: %+v\n", variableHeader)
+	fmt.Printf("payload: %v\n", payload)
+	connack := packet.NewConnackForAccepted()
+	return connack, nil
+}
