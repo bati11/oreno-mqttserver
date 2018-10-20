@@ -68,28 +68,12 @@ func (h *ConnectVariableHeader) ToBytes() []byte {
 	return result
 }
 
-type ConnackVariableHeader struct {
-	SessionPresent bool
-	ReturnCode     uint8
-}
-
 type ConnectError struct {
 	msg string
 }
 
 func (e *ConnectError) Error() string {
 	return e.msg
-}
-
-func (h *ConnackVariableHeader) ToBytes() []byte {
-	var result []byte
-	if h.SessionPresent {
-		result = append(result, 1)
-	} else {
-		result = append(result, 0)
-	}
-	result = append(result, h.ReturnCode)
-	return result
 }
 
 func ToConnectVariableHeader(fixedHeader FixedHeader, bs []byte) (ConnectVariableHeader, []byte, error) {
