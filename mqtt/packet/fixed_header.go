@@ -30,6 +30,15 @@ const (
 	Reserved2
 )
 
+type QoS uint8
+
+const (
+	QoS0 QoS = iota
+	QoS1
+	QoS2
+	QoSReserved
+)
+
 func (p PacketType) string() string {
 	switch p {
 	case Reserved:
@@ -49,8 +58,7 @@ func (p PacketType) byte() byte {
 type FixedHeader struct {
 	PacketType      PacketType
 	Dup             bool
-	QoS1            bool
-	QoS2            bool
+	QoS             QoS
 	Retain          bool
 	RemainingLength uint
 }
@@ -72,13 +80,22 @@ func ToFixedHeader(bs []byte) (FixedHeader, []byte, error) {
 	dup := refbit(bs[0], 3) > 0
 	qos1 := refbit(bs[0], 2) > 0
 	qos2 := refbit(bs[0], 1) > 0
+	var qos QoS
+	if !qos1 && !qos2 {
+		qos = QoS0
+	} else if !qos1 && qos2 {
+		qos = QoS1
+	} else if qos1 && !qos2 {
+		qos = QoS2
+	} else {
+		qos = QoSReserved
+	}
 	retain := refbit(bs[0], 0) > 0
 	remainingLength, remains := decodeRemainingLength(bs[1:])
 	result := FixedHeader{
 		PacketType:      PacketType(packetType),
 		Dup:             dup,
-		QoS1:            qos1,
-		QoS2:            qos2,
+		QoS:             qos,
 		Retain:          retain,
 		RemainingLength: remainingLength,
 	}
@@ -91,10 +108,9 @@ func (h *FixedHeader) ToBytes() []byte {
 	if h.Dup {
 		b = onbit(b, 4)
 	}
-	if h.QoS1 {
+	if h.QoS == QoS1 {
 		b = onbit(b, 2)
-	}
-	if h.QoS2 {
+	} else if h.QoS == QoS2 {
 		b = onbit(b, 1)
 	}
 	if h.Retain {

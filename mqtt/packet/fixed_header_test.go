@@ -24,11 +24,8 @@ func TestToFixedHeader(t *testing.T) {
 	if result.Dup != false {
 		t.Errorf("Dup: got %v, want %v", result.Dup, false)
 	}
-	if result.QoS1 != false {
-		t.Errorf("QoS1: got %v, want %v", result.QoS1, false)
-	}
-	if result.QoS2 != true {
-		t.Errorf("QoS2: got %v, want %v", result.QoS2, true)
+	if result.QoS != packet.QoS1 {
+		t.Errorf("QoS: got %v, want %v", result.QoS, packet.QoS1)
 	}
 	if result.Retain != false {
 		t.Errorf("Retain: got %v, want %v", result.Retain, false)
@@ -100,13 +97,14 @@ func TestDup(t *testing.T) {
 	}
 }
 
-func TestQoS1(t *testing.T) {
+func TestQoS(t *testing.T) {
 	var cases = []struct {
 		in   byte
-		want bool
+		want packet.QoS
 	}{
-		{0x10, false},
-		{0x14, true},
+		{0x10, packet.QoS0},
+		{0x12, packet.QoS1},
+		{0x14, packet.QoS2},
 	}
 	for _, tt := range cases {
 		t.Run(fmt.Sprintf("%X", tt.in), func(t *testing.T) {
@@ -115,30 +113,8 @@ func TestQoS1(t *testing.T) {
 			if err != nil {
 				t.Errorf("ToFixedHeader() returns err: %v", err)
 			}
-			if result.QoS1 != tt.want {
-				t.Errorf("QoS1: got %v, want %v", result.QoS1, tt.want)
-			}
-		})
-	}
-}
-
-func TestQoS2(t *testing.T) {
-	var cases = []struct {
-		in   byte
-		want bool
-	}{
-		{0x10, false},
-		{0x12, true},
-	}
-	for _, tt := range cases {
-		t.Run(fmt.Sprintf("%X", tt.in), func(t *testing.T) {
-			bs := []byte{tt.in, 0x00}
-			result, _, err := packet.ToFixedHeader(bs)
-			if err != nil {
-				t.Errorf("ToFixedHeader() returns err: %v", err)
-			}
-			if result.QoS2 != tt.want {
-				t.Errorf("QoS2: got %v, want %v", result.QoS2, tt.want)
+			if result.QoS != tt.want {
+				t.Errorf("QoS: got %v, want %v", result.QoS, tt.want)
 			}
 		})
 	}
@@ -225,7 +201,7 @@ func TestFixedHeaderToBytes(t *testing.T) {
 		wantError bool
 	}{
 		{
-			packet.FixedHeader{packet.CONNACK, false, false, false, false, 2},
+			packet.FixedHeader{packet.CONNACK, false, packet.QoS0, false, 2},
 			[]byte{0x20, 0x02},
 			false,
 		},
