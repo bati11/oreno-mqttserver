@@ -79,6 +79,24 @@ func TestToPublishVariableHeader(t *testing.T) {
 			PublishVariableHeader{}, nil,
 			true,
 		},
+		{
+			"Contains '#'",
+			args{
+				FixedHeader{PacketType: PUBLISH, QoS: QoS0},
+				[]byte{0x00, 0x03, 0x61, 0x2F, 0x23, 0x00, 0x0A}, // a/#
+			},
+			PublishVariableHeader{}, nil,
+			true,
+		},
+		{
+			"Contains '+'",
+			args{
+				FixedHeader{PacketType: PUBLISH, QoS: QoS0},
+				[]byte{0x00, 0x03, 0x61, 0x2F, 0x2B, 0x00, 0x0A}, // a/+
+			},
+			PublishVariableHeader{}, nil,
+			true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

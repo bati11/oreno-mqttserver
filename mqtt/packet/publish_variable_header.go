@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"strings"
 )
 
 type PublishVariableHeader struct {
@@ -29,6 +30,9 @@ func ToPublishVariableHeader(fixedHeader FixedHeader, bs []byte) (PublishVariabl
 		return PublishVariableHeader{}, nil, fmt.Errorf("len(bs) should be >= 2+LSB")
 	}
 	topicName := bs[2+lengthMSB : 2+lengthLSB]
+	if strings.ContainsAny(string(topicName), "# & +") {
+		return PublishVariableHeader{}, nil, fmt.Errorf("topic name must not contain wildcard. it got is %v", topicName)
+	}
 
 	var packetIdentifier uint16
 	if fixedHeader.QoS == QoS1 || fixedHeader.QoS == QoS2 {
