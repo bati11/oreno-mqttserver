@@ -1,6 +1,7 @@
 package packet_test
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"testing"
@@ -14,7 +15,7 @@ func TestToFixedHeader(t *testing.T) {
 	b3 := byte(0x00)
 	in := []byte{b1, b2, b3}
 
-	result, remains, err := packet.ToFixedHeader(in)
+	result, err := packet.ToFixedHeader(bufio.NewReader(bytes.NewBuffer(in)))
 	if err != nil {
 		t.Errorf("ToFixedHeader() returns err: %v", err)
 	}
@@ -32,9 +33,6 @@ func TestToFixedHeader(t *testing.T) {
 	}
 	if result.RemainingLength != 1 {
 		t.Errorf("RemainingLength: got %v, want %v", result.RemainingLength, 1)
-	}
-	if !bytes.Equal(remains, []byte{0x00}) {
-		t.Errorf("remains: got %q, want %q", remains, []byte{0x00})
 	}
 }
 
@@ -63,7 +61,7 @@ func TestPacketType(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(fmt.Sprintf("%X", tt.in), func(t *testing.T) {
 			bs := []byte{tt.in, 0x00}
-			result, _, err := packet.ToFixedHeader(bs)
+			result, err := packet.ToFixedHeader(bufio.NewReader(bytes.NewBuffer(bs)))
 			if err != nil {
 				t.Errorf("ToFixedHeader() returns err: %v", err)
 			}
@@ -86,7 +84,7 @@ func TestDup(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(fmt.Sprintf("%X", tt.in), func(t *testing.T) {
 			bs := []byte{tt.in, 0x00}
-			result, _, err := packet.ToFixedHeader(bs)
+			result, err := packet.ToFixedHeader(bufio.NewReader(bytes.NewBuffer(bs)))
 			if err != nil {
 				t.Errorf("ToFixedHeader() returns err: %v", err)
 			}
@@ -109,7 +107,7 @@ func TestQoS(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(fmt.Sprintf("%X", tt.in), func(t *testing.T) {
 			bs := []byte{tt.in, 0x00}
-			result, _, err := packet.ToFixedHeader(bs)
+			result, err := packet.ToFixedHeader(bufio.NewReader(bytes.NewBuffer(bs)))
 			if err != nil {
 				t.Errorf("ToFixedHeader() returns err: %v", err)
 			}
@@ -131,7 +129,7 @@ func TestRetain(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(fmt.Sprintf("%X", tt.in), func(t *testing.T) {
 			bs := []byte{tt.in, 0x00}
-			result, _, err := packet.ToFixedHeader(bs)
+			result, err := packet.ToFixedHeader(bufio.NewReader(bytes.NewBuffer(bs)))
 			if err != nil {
 				t.Errorf("ToFixedHeader() returns err: %v", err)
 			}
@@ -162,16 +160,16 @@ func TestRemainingLength(t *testing.T) {
 			bs := append([]byte{0x10}, tt.in...)
 			wantRemains := []byte{0x20, 0x21, 0x22}
 			bs = append(bs, wantRemains...)
-			result, resultRemains, err := packet.ToFixedHeader(bs)
+			result, err := packet.ToFixedHeader(bufio.NewReader(bytes.NewBuffer(bs)))
 			if err != nil {
 				t.Errorf("ToFixedHeader() returns err: %v", err)
 			}
 			if result.RemainingLength != tt.want {
 				t.Errorf("RemainingLength: got %v, want %v", result.RemainingLength, tt.want)
 			}
-			if !bytes.Equal(resultRemains, wantRemains) {
-				t.Errorf("wantRemains: got %v, want %X", resultRemains, wantRemains)
-			}
+			//if !bytes.Equal(resultRemains, wantRemains) {
+			//	t.Errorf("wantRemains: got %v, want %X", resultRemains, wantRemains)
+			//}
 		})
 	}
 }
@@ -186,7 +184,7 @@ func TestErrorCase(t *testing.T) {
 	}
 	for _, tt := range cases {
 		t.Run(fmt.Sprintf("%X", tt.in), func(t *testing.T) {
-			_, _, err := packet.ToFixedHeader(tt.in)
+			_, err := packet.ToFixedHeader(bufio.NewReader(bytes.NewBuffer(tt.in)))
 			if err == nil {
 				t.Errorf("ToFixedHeader: got %v, want %v", err, tt.want)
 			}

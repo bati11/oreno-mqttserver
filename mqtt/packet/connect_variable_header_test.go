@@ -1,7 +1,6 @@
 package packet_test
 
 import (
-	"bytes"
 	"fmt"
 	"reflect"
 	"testing"
@@ -24,23 +23,12 @@ func sampleVariableHeaderBytes() []byte {
 }
 
 func TestToVariableHeader(t *testing.T) {
-	fixedHeaderBytes := []byte{0x10, 0x01}
 	variableHeaderBytes := sampleVariableHeaderBytes()
-
-	in := append(fixedHeaderBytes, variableHeaderBytes...)
-
-	payload := []byte{0x00, 0x04, 'h', 'o', 'g', 'e'}
-	in = append(in, payload...)
-
-	fixedHeader, remains, err := packet.ToFixedHeader(in)
-	if err != nil {
-		t.Errorf("ToFixedHeader() returns err: %v", err)
+	fixedHeader := packet.FixedHeader{
+		PacketType:      packet.CONNECT,
+		RemainingLength: uint(len(variableHeaderBytes)),
 	}
-	if !bytes.Equal(remains, append(variableHeaderBytes, payload...)) {
-		t.Errorf("remains: got %v, want %v", remains, append(variableHeaderBytes, payload...))
-	}
-
-	variableHeader, remains, err := packet.ToConnectVariableHeader(fixedHeader, remains)
+	variableHeader, _, err := packet.ToConnectVariableHeader(fixedHeader, variableHeaderBytes)
 	if err != nil {
 		t.Errorf("ToConnectVariableHeader returns err: %v", err)
 	}
@@ -72,26 +60,15 @@ func TestToVariableHeader(t *testing.T) {
 	if variableHeader.KeepAlive != 60 {
 		t.Errorf("KeepAlive: got %v, want %v", variableHeader.KeepAlive, 60)
 	}
-	if !bytes.Equal(remains, payload) {
-		t.Errorf("remains: got %v, want: %v", remains, payload)
-	}
 }
 
 func TestToVariableHeaderInvalidPacketType(t *testing.T) {
-	fixedHeaderBytes := []byte{byte(packet.PUBLISH), 0x01}
 	variableHeaderBytes := sampleVariableHeaderBytes()
-
-	in := append(fixedHeaderBytes, variableHeaderBytes...)
-
-	fixedHeader, remains, err := packet.ToFixedHeader(in)
-	if err != nil {
-		t.Errorf("ToFixedHeader() returns err: %v", err)
+	fixedHeader := packet.FixedHeader{
+		PacketType:      packet.PUBLISH,
+		RemainingLength: uint(len(variableHeaderBytes)),
 	}
-	if !bytes.Equal(remains, variableHeaderBytes) {
-		t.Errorf("remains: got %v, want %v", remains, variableHeaderBytes)
-	}
-
-	_, _, err = packet.ToConnectVariableHeader(fixedHeader, remains)
+	_, _, err := packet.ToConnectVariableHeader(fixedHeader, variableHeaderBytes)
 	if err == nil {
 		t.Errorf("ToConnectVariableHeader() returns err: got nil, want err")
 	}
@@ -107,24 +84,17 @@ func TestProtocolNameInConnect(t *testing.T) {
 	}
 	for _, tt := range cases {
 		t.Run(fmt.Sprintf("%q", tt.in), func(t *testing.T) {
-			fixedHeaderBytes := []byte{0x10, 0x01}
 			variableHeaderBytes := tt.in
 			vb7 := byte(0x04)  // 00000100
 			vb8 := byte(0xCE)  // 11001110
 			vb9 := byte(0x00)  // 00000000
 			vb10 := byte(0x0A) // 00001010
 			variableHeaderBytes = append(variableHeaderBytes, vb7, vb8, vb9, vb10)
-
-			in := append(fixedHeaderBytes, variableHeaderBytes...)
-			fixedHeader, remains, err := packet.ToFixedHeader(in)
-			if err != nil {
-				t.Errorf("ToFixedHeader() returns err: %v", err)
+			fixedHeader := packet.FixedHeader{
+				PacketType:      packet.CONNECT,
+				RemainingLength: uint(len(variableHeaderBytes)),
 			}
-			if !bytes.Equal(remains, variableHeaderBytes) {
-				t.Errorf("remains: got %v, want %v", remains, variableHeaderBytes)
-			}
-
-			_, _, err = packet.ToConnectVariableHeader(fixedHeader, remains)
+			_, _, err := packet.ToConnectVariableHeader(fixedHeader, variableHeaderBytes)
 			if err == nil {
 				t.Errorf("ToConnectVariableHeader() returns err: got nil, want error")
 			}
@@ -143,20 +113,13 @@ func TestProtocolLevelInConnect(t *testing.T) {
 	}
 	for _, tt := range cases {
 		t.Run(string(tt.in), func(t *testing.T) {
-			fixedHeaderBytes := []byte{0x10, 0x01}
 			variableHeaderBytes := sampleVariableHeaderBytes()
 			variableHeaderBytes[6] = tt.in
-
-			in := append(fixedHeaderBytes, variableHeaderBytes...)
-			fixedHeader, remains, err := packet.ToFixedHeader(in)
-			if err != nil {
-				t.Errorf("ToFixedHeader() returns err: %v", err)
+			fixedHeader := packet.FixedHeader{
+				PacketType:      packet.CONNECT,
+				RemainingLength: uint(len(variableHeaderBytes)),
 			}
-			if !bytes.Equal(remains, variableHeaderBytes) {
-				t.Errorf("remains: got %v, want %v", remains, variableHeaderBytes)
-			}
-
-			_, _, err = packet.ToConnectVariableHeader(fixedHeader, remains)
+			_, _, err := packet.ToConnectVariableHeader(fixedHeader, variableHeaderBytes)
 			if tt.wantErr && (err == nil) {
 				t.Errorf("ToConnectVariableHeader() should returns err: but got nil")
 			}
@@ -177,20 +140,13 @@ func TestReservedValueInConnectFlagsInConnect(t *testing.T) {
 	}
 	for _, tt := range cases {
 		t.Run(fmt.Sprintf("%v", tt.in), func(t *testing.T) {
-			fixedHeaderBytes := []byte{0x10, 0x01}
 			variableHeaderBytes := sampleVariableHeaderBytes()
 			variableHeaderBytes[7] = tt.in
-
-			in := append(fixedHeaderBytes, variableHeaderBytes...)
-			fixedHeader, remains, err := packet.ToFixedHeader(in)
-			if err != nil {
-				t.Errorf("ToFixedHeader() returns err: %v", err)
+			fixedHeader := packet.FixedHeader{
+				PacketType:      packet.CONNECT,
+				RemainingLength: uint(len(variableHeaderBytes)),
 			}
-			if !bytes.Equal(remains, variableHeaderBytes) {
-				t.Errorf("remains: got %v, want %v", remains, variableHeaderBytes)
-			}
-
-			_, _, err = packet.ToConnectVariableHeader(fixedHeader, remains)
+			_, _, err := packet.ToConnectVariableHeader(fixedHeader, variableHeaderBytes)
 			if tt.wantErr && (err == nil) {
 				t.Errorf("ToConnectVariableHeader() should returns err: but got nil")
 			}

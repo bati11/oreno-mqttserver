@@ -5,6 +5,7 @@ Package packet implements packets of MQTT.
 package packet
 
 import (
+	"bufio"
 	"encoding/binary"
 	"errors"
 )
@@ -69,17 +70,18 @@ var (
 )
 
 // ToFixedHeader converts bytes into a FixedHeader structure.
-func ToFixedHeader(bs []byte) (FixedHeader, []byte, error) {
-	if len(bs) < 2 {
-		return FixedHeader{}, nil, ErrBytesLength
+func ToFixedHeader(r *bufio.Reader) (FixedHeader, error) {
+	b, err := r.ReadByte()
+	if err != nil {
+		return FixedHeader{}, err
 	}
-	packetType := bs[0] >> 4
+	packetType := b >> 4
 	if packetType < 0 || 15 < packetType {
-		return FixedHeader{}, nil, ErrBytesLength
+		return FixedHeader{}, ErrBytesLength
 	}
-	dup := refbit(bs[0], 3) > 0
-	qos1 := refbit(bs[0], 2) > 0
-	qos2 := refbit(bs[0], 1) > 0
+	dup := refbit(b, 3) > 0
+	qos1 := refbit(b, 2) > 0
+	qos2 := refbit(b, 1) > 0
 	var qos QoS
 	if !qos1 && !qos2 {
 		qos = QoS0
@@ -90,8 +92,11 @@ func ToFixedHeader(bs []byte) (FixedHeader, []byte, error) {
 	} else {
 		qos = QoSReserved
 	}
-	retain := refbit(bs[0], 0) > 0
-	remainingLength, remains := decodeRemainingLength(bs[1:])
+	retain := refbit(b, 0) > 0
+	remainingLength, err := decodeRemainingLength(r)
+	if err != nil {
+		return FixedHeader{}, err
+	}
 	result := FixedHeader{
 		PacketType:      PacketType(packetType),
 		Dup:             dup,
@@ -99,7 +104,7 @@ func ToFixedHeader(bs []byte) (FixedHeader, []byte, error) {
 		Retain:          retain,
 		RemainingLength: remainingLength,
 	}
-	return result, remains, nil
+	return result, nil
 }
 
 func (h *FixedHeader) ToBytes() []byte {
@@ -130,20 +135,23 @@ func onbit(b byte, i uint) byte {
 	return b | (1 << i)
 }
 
-func decodeRemainingLength(bs []byte) (uint, []byte) {
+func decodeRemainingLength(r *bufio.Reader) (uint, error) {
 	multiplier := uint(1)
 	var value uint
 	i := uint(0)
 	for ; i < 8; i++ {
-		digit := bs[i]
+		b, err := r.ReadByte()
+		if err != nil {
+			return 0, err
+		}
+		digit := b
 		value = value + uint(digit&127)*multiplier
 		multiplier = multiplier * 128
 		if (digit & 128) == 0 {
 			break
 		}
 	}
-	remains := bs[i+1:]
-	return value, remains
+	return value, nil
 }
 
 func (h *FixedHeader) encodeRemainingLength() []byte {

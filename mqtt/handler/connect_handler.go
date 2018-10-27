@@ -1,13 +1,20 @@
 package handler
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 
 	"github.com/bati11/oreno-mqtt/mqtt/packet"
 )
 
-func HandleConnect(fixedHeader packet.FixedHeader, remains []byte) (packet.Connack, error) {
-	variableHeader, remains, err := packet.ToConnectVariableHeader(fixedHeader, remains)
+func HandleConnect(fixedHeader packet.FixedHeader, r *bufio.Reader) (packet.Connack, error) {
+	bs := make([]byte, fixedHeader.RemainingLength)
+	_, err := io.ReadFull(r, bs)
+	if err != nil {
+		return packet.Connack{}, err
+	}
+	variableHeader, remains, err := packet.ToConnectVariableHeader(fixedHeader, bs)
 	switch err.(type) {
 	case *packet.ConnectError:
 		fmt.Printf("%#v\n", err)

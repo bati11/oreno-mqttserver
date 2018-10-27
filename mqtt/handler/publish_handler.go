@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"os"
@@ -8,7 +9,7 @@ import (
 	"github.com/bati11/oreno-mqtt/mqtt/packet"
 )
 
-func HandlePublish(fixedHeader packet.FixedHeader, r io.Reader) (*packet.MQTTPacket, error) {
+func HandlePublish(fixedHeader packet.FixedHeader, r *bufio.Reader) (*packet.MQTTPacket, error) {
 	bs := make([]byte, 6)
 	_, err := io.ReadFull(r, bs)
 	if err != nil {

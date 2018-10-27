@@ -1,6 +1,7 @@
 package mqtt
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"net"
@@ -21,21 +22,12 @@ func Run() error {
 			return err
 		}
 		go func(conn net.Conn) {
+			r := bufio.NewReader(conn)
 			for {
-				bs := make([]byte, 5)
-				n, err := conn.Read(bs)
+				fixedHeader, err := packet.ToFixedHeader(r)
 				if err == io.EOF {
 					break
 				} else if err != nil {
-					// TODO
-					panic(err)
-				}
-				if n != 5 {
-					// TODO
-					panic(err)
-				}
-				fixedHeader, remains, err := packet.ToFixedHeader(bs[:])
-				if err != nil {
 					// TODO
 					panic(err)
 				}
@@ -43,19 +35,10 @@ func Run() error {
 					// TODO
 					panic(err)
 				}
-				bs = make([]byte, fixedHeader.RemainingLength)
-				_, err = conn.Read(bs)
-				if err != nil {
-					// TODO
-					panic(err)
-				}
-				for _, b := range bs {
-					remains = append(remains, b)
-				}
 				switch fixedHeader.PacketType {
 				case packet.CONNECT:
 					fmt.Println("----- START CONNECT -----")
-					connack, err := handler.HandleConnect(fixedHeader, remains)
+					connack, err := handler.HandleConnect(fixedHeader, r)
 					if err != nil {
 						// TODO
 						panic(err)
@@ -64,9 +47,10 @@ func Run() error {
 					fmt.Println("----- END CONNECT -----")
 				case packet.PUBLISH:
 					fmt.Println("----- START PUBLISH -----")
-					_, err := handler.HandlePublish(fixedHeader, remains)
+					_, err := handler.HandlePublish(fixedHeader, r)
 					if err != nil {
 						// TODO
+						fmt.Printf("%+v\n", fixedHeader)
 						panic(err)
 					}
 					fmt.Println("----- END PUBLISH -----")
