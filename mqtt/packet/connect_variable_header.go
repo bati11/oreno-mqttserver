@@ -76,15 +76,15 @@ func (e *ConnectError) Error() string {
 	return e.msg
 }
 
-func ToConnectVariableHeader(fixedHeader FixedHeader, bs []byte) (ConnectVariableHeader, []byte, error) {
+func ToConnectVariableHeader(fixedHeader FixedHeader, bs []byte) (ConnectVariableHeader, error) {
 	err := checkIsConnectPacket(fixedHeader, bs)
 	if err != nil {
-		return ConnectVariableHeader{}, nil, err
+		return ConnectVariableHeader{}, err
 	}
 
 	protocolLevel := bs[6]
 	if protocolLevel != 4 {
-		return ConnectVariableHeader{}, nil, &ConnectError{fmt.Sprintf("protocol level is not supported. it got is %v", protocolLevel)}
+		return ConnectVariableHeader{}, &ConnectError{fmt.Sprintf("protocol level is not supported. it got is %v", protocolLevel)}
 	}
 
 	connectFlagsBytes := bs[7]
@@ -93,14 +93,14 @@ func ToConnectVariableHeader(fixedHeader FixedHeader, bs []byte) (ConnectVariabl
 	// TODO now, support only 1
 	cleanSession := refbit(connectFlagsBytes, 1)
 	if cleanSession != 1 {
-		return ConnectVariableHeader{}, nil, &ConnectError{fmt.Sprintf("clean session value in connect flags must be 1. it got is %v", cleanSession)}
+		return ConnectVariableHeader{}, &ConnectError{fmt.Sprintf("clean session value in connect flags must be 1. it got is %v", cleanSession)}
 	}
 	connectFlags.CleanSession = true
 
 	// TODO now, support only 0
 	willFlag := refbit(connectFlagsBytes, 2)
 	if willFlag != 0 {
-		return ConnectVariableHeader{}, nil, &ConnectError{fmt.Sprintf("will flag value in connect flags must be 0. it got is %v", willFlag)}
+		return ConnectVariableHeader{}, &ConnectError{fmt.Sprintf("will flag value in connect flags must be 0. it got is %v", willFlag)}
 	}
 	connectFlags.WillFlag = false
 
@@ -108,28 +108,28 @@ func ToConnectVariableHeader(fixedHeader FixedHeader, bs []byte) (ConnectVariabl
 	willQoS2 := refbit(connectFlagsBytes, 3)
 	willQoS1 := refbit(connectFlagsBytes, 4)
 	if willQoS2 != 0 || willQoS1 != 0 {
-		return ConnectVariableHeader{}, nil, &ConnectError{fmt.Sprintf("will QoS value in connect flags must be 0. it got is %v %v", willQoS1, willQoS2)}
+		return ConnectVariableHeader{}, &ConnectError{fmt.Sprintf("will QoS value in connect flags must be 0. it got is %v %v", willQoS1, willQoS2)}
 	}
 	connectFlags.WillQoS = 0
 
 	// TODO now, support only 0
 	willRetain := refbit(connectFlagsBytes, 5)
 	if willRetain != 0 {
-		return ConnectVariableHeader{}, nil, &ConnectError{fmt.Sprintf("will retain value in connect flags must be 0. it got is %v", willRetain)}
+		return ConnectVariableHeader{}, &ConnectError{fmt.Sprintf("will retain value in connect flags must be 0. it got is %v", willRetain)}
 	}
 	connectFlags.WillRetain = false
 
 	// TODO now, support only 0
 	passwordFlag := refbit(connectFlagsBytes, 6)
 	if passwordFlag != 0 {
-		return ConnectVariableHeader{}, nil, &ConnectError{fmt.Sprintf("password flag value in connect flags must be 0. it got is %v", passwordFlag)}
+		return ConnectVariableHeader{}, &ConnectError{fmt.Sprintf("password flag value in connect flags must be 0. it got is %v", passwordFlag)}
 	}
 	connectFlags.PasswordFlag = false
 
 	// TODO now, support only 0
 	userNameFlag := refbit(connectFlagsBytes, 7)
 	if userNameFlag != 0 {
-		return ConnectVariableHeader{}, nil, &ConnectError{fmt.Sprintf("user name flag value in connect flags must be 0. it got is %v", userNameFlag)}
+		return ConnectVariableHeader{}, &ConnectError{fmt.Sprintf("user name flag value in connect flags must be 0. it got is %v", userNameFlag)}
 	}
 	connectFlags.UserNameFlag = false
 
@@ -141,7 +141,7 @@ func ToConnectVariableHeader(fixedHeader FixedHeader, bs []byte) (ConnectVariabl
 		ConnectFlags:  connectFlags,
 		KeepAlive:     keepAlive,
 	}
-	return result, bs[10:], nil
+	return result, nil
 }
 
 func checkIsConnectPacket(fixedHeader FixedHeader, bs []byte) error {

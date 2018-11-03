@@ -1,6 +1,8 @@
 package handler_test
 
 import (
+	"bufio"
+	"bytes"
 	"errors"
 	"reflect"
 	"testing"
@@ -72,14 +74,14 @@ func TestHandleConnect(t *testing.T) {
 			bs = append(bs, tt.in.connectPayload.ToBytes()...)
 			tt.in.fixedHeader.RemainingLength = uint(len(bs))
 
-			result, err := handler.HandleConnect(tt.in.fixedHeader, bs)
+			result, err := handler.HandleConnect(tt.in.fixedHeader, bufio.NewReader(bytes.NewBuffer(bs)))
 			if !tt.wantError && (err != nil) {
 				t.Fatalf("want no err, but %#v", err)
 			}
-			if tt.wantError && !(reflect.DeepEqual(err, tt.err)) {
-				t.Fatalf("want %v, but %#v", tt.err, err)
+			if tt.wantError && err == nil {
+				t.Fatalf("want error, but err is nil")
 			}
-			if !reflect.DeepEqual(result, tt.want) {
+			if !tt.wantError && !reflect.DeepEqual(result, tt.want) {
 				t.Fatalf("want %+v, got %+v", tt.want, result)
 			}
 		})

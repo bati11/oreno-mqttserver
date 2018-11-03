@@ -28,7 +28,7 @@ func TestToVariableHeader(t *testing.T) {
 		PacketType:      packet.CONNECT,
 		RemainingLength: uint(len(variableHeaderBytes)),
 	}
-	variableHeader, _, err := packet.ToConnectVariableHeader(fixedHeader, variableHeaderBytes)
+	variableHeader, err := packet.ToConnectVariableHeader(fixedHeader, variableHeaderBytes)
 	if err != nil {
 		t.Errorf("ToConnectVariableHeader returns err: %v", err)
 	}
@@ -68,7 +68,7 @@ func TestToVariableHeaderInvalidPacketType(t *testing.T) {
 		PacketType:      packet.PUBLISH,
 		RemainingLength: uint(len(variableHeaderBytes)),
 	}
-	_, _, err := packet.ToConnectVariableHeader(fixedHeader, variableHeaderBytes)
+	_, err := packet.ToConnectVariableHeader(fixedHeader, variableHeaderBytes)
 	if err == nil {
 		t.Errorf("ToConnectVariableHeader() returns err: got nil, want err")
 	}
@@ -94,7 +94,7 @@ func TestProtocolNameInConnect(t *testing.T) {
 				PacketType:      packet.CONNECT,
 				RemainingLength: uint(len(variableHeaderBytes)),
 			}
-			_, _, err := packet.ToConnectVariableHeader(fixedHeader, variableHeaderBytes)
+			_, err := packet.ToConnectVariableHeader(fixedHeader, variableHeaderBytes)
 			if err == nil {
 				t.Errorf("ToConnectVariableHeader() returns err: got nil, want error")
 			}
@@ -119,7 +119,7 @@ func TestProtocolLevelInConnect(t *testing.T) {
 				PacketType:      packet.CONNECT,
 				RemainingLength: uint(len(variableHeaderBytes)),
 			}
-			_, _, err := packet.ToConnectVariableHeader(fixedHeader, variableHeaderBytes)
+			_, err := packet.ToConnectVariableHeader(fixedHeader, variableHeaderBytes)
 			if tt.wantErr && (err == nil) {
 				t.Errorf("ToConnectVariableHeader() should returns err: but got nil")
 			}
@@ -146,7 +146,7 @@ func TestReservedValueInConnectFlagsInConnect(t *testing.T) {
 				PacketType:      packet.CONNECT,
 				RemainingLength: uint(len(variableHeaderBytes)),
 			}
-			_, _, err := packet.ToConnectVariableHeader(fixedHeader, variableHeaderBytes)
+			_, err := packet.ToConnectVariableHeader(fixedHeader, variableHeaderBytes)
 			if tt.wantErr && (err == nil) {
 				t.Errorf("ToConnectVariableHeader() should returns err: but got nil")
 			}
@@ -165,7 +165,7 @@ func TestToStructRevertToByteArray(t *testing.T) {
 		RemainingLength: uint(len(variableHeaderBytes)),
 	}
 
-	s, _, err := packet.ToConnectVariableHeader(fixHeader, variableHeaderBytes)
+	s, err := packet.ToConnectVariableHeader(fixHeader, variableHeaderBytes)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}

@@ -15,7 +15,7 @@ func HandlePublish(fixedHeader packet.FixedHeader, r *bufio.Reader) (*packet.MQT
 	if err != nil {
 		return nil, err
 	}
-	variableHeader, _, err := packet.ToPublishVariableHeader(fixedHeader, bs)
+	variableHeader, err := packet.ToPublishVariableHeader(fixedHeader, bs)
 	if err != nil {
 		return nil, err
 	}

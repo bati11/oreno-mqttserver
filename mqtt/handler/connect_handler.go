@@ -14,7 +14,7 @@ func HandleConnect(fixedHeader packet.FixedHeader, r *bufio.Reader) (packet.Conn
 	if err != nil {
 		return packet.Connack{}, err
 	}
-	variableHeader, remains, err := packet.ToConnectVariableHeader(fixedHeader, bs)
+	variableHeader, err := packet.ToConnectVariableHeader(fixedHeader, bs[:10])
 	switch err.(type) {
 	case *packet.ConnectError:
 		fmt.Printf("%#v\n", err)
@@ -22,7 +22,7 @@ func HandleConnect(fixedHeader packet.FixedHeader, r *bufio.Reader) (packet.Conn
 	case error:
 		return packet.Connack{}, err
 	}
-	payload, err := packet.ToConnectPayload(remains)
+	payload, err := packet.ToConnectPayload(bs[10:])
 	if err != nil {
 		fmt.Printf("%#v\n", err)
 		return packet.NewConnackForRefusedByIdentifierRejected(), nil
