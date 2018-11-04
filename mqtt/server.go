@@ -63,6 +63,15 @@ func Run() error {
 					}
 					conn.Write(suback.ToBytes())
 					fmt.Println("----- END SUBSCRIBE -----")
+				case packet.PINGREQ:
+					fmt.Println("----- START PINGREQ -----")
+					pingresp, err := handler.HandlePingreq(fixedHeader)
+					if err != nil {
+						// TODO
+						panic(err)
+					}
+					conn.Write(pingresp.ToBytes())
+					fmt.Println("----- END PINGREQ -----")
 				}
 			}
 			conn.Close()
