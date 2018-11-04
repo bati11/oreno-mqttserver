@@ -54,6 +54,15 @@ func Run() error {
 						panic(err)
 					}
 					fmt.Println("----- END PUBLISH -----")
+				case packet.SUBSCRIBE:
+					fmt.Println("----- START SUBSCRIBE -----")
+					suback, err := handler.HandleSubscribe(fixedHeader, r)
+					if err != nil {
+						// TODO
+						panic(err)
+					}
+					conn.Write(suback.ToBytes())
+					fmt.Println("----- END SUBSCRIBE -----")
 				}
 			}
 			conn.Close()

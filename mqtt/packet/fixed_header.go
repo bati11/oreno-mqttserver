@@ -40,6 +40,20 @@ const (
 	QoSReserved
 )
 
+func toQoS(qosBit1 bool, qosBit2 bool) QoS {
+	var qos QoS
+	if !qosBit1 && !qosBit2 {
+		qos = QoS0
+	} else if !qosBit1 && qosBit2 {
+		qos = QoS1
+	} else if qosBit1 && !qosBit2 {
+		qos = QoS2
+	} else {
+		qos = QoSReserved
+	}
+	return qos
+}
+
 func (p PacketType) string() string {
 	switch p {
 	case Reserved:
@@ -80,18 +94,9 @@ func ToFixedHeader(r *bufio.Reader) (FixedHeader, error) {
 		return FixedHeader{}, ErrBytesLength
 	}
 	dup := refbit(b, 3) > 0
-	qos1 := refbit(b, 2) > 0
-	qos2 := refbit(b, 1) > 0
-	var qos QoS
-	if !qos1 && !qos2 {
-		qos = QoS0
-	} else if !qos1 && qos2 {
-		qos = QoS1
-	} else if qos1 && !qos2 {
-		qos = QoS2
-	} else {
-		qos = QoSReserved
-	}
+	qosBit1 := refbit(b, 2) > 0
+	qosBit2 := refbit(b, 1) > 0
+	qos := toQoS(qosBit1, qosBit2)
 	retain := refbit(b, 0) > 0
 	remainingLength, err := decodeRemainingLength(r)
 	if err != nil {
