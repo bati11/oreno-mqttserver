@@ -1,5 +1,7 @@
 package packet
 
+import "github.com/pkg/errors"
+
 type FixedHeader struct {
 	PacketType      byte
 	Dup             byte
@@ -9,7 +11,10 @@ type FixedHeader struct {
 	RemainingLength uint
 }
 
-func ToFixedHeader(bs []byte) FixedHeader {
+func ToFixedHeader(bs []byte) (FixedHeader, error) {
+	if len(bs) <= 1 {
+		return FixedHeader{}, errors.New("len(bs) should be greater than 1")
+	}
 	b := bs[0]
 	packetType := b >> 4
 	dup := refbit(bs[0], 3)
@@ -24,7 +29,7 @@ func ToFixedHeader(bs []byte) FixedHeader {
 		QoS2:            qos2,
 		Retain:          retain,
 		RemainingLength: remainingLength,
-	}
+	}, nil
 }
 
 func refbit(b byte, n uint) byte {
