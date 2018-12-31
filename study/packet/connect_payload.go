@@ -2,6 +2,7 @@ package packet
 
 import (
 	"encoding/binary"
+	"regexp"
 
 	"github.com/pkg/errors"
 )
@@ -9,6 +10,8 @@ import (
 type ConnectPayload struct {
 	ClientID string
 }
+
+var clientIDRegex = regexp.MustCompile("^[a-zA-Z0-9-|]*$")
 
 func ToConnectPayload(bs []byte) (ConnectPayload, error) {
 	if len(bs) < 3 {
@@ -23,6 +26,9 @@ func ToConnectPayload(bs []byte) (ConnectPayload, error) {
 	}
 	if len(clientID) < 1 || len(clientID) > 23 {
 		return ConnectPayload{}, errors.New("ClientID length is invalid")
+	}
+	if !clientIDRegex.MatchString(clientID) {
+		return ConnectPayload{}, errors.New("clientId format shoud be \"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\"")
 	}
 	return ConnectPayload{ClientID: clientID}, nil
 }

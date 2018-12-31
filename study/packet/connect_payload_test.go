@@ -33,6 +33,12 @@ func TestToConnectPayload(t *testing.T) {
 			want:    ConnectPayload{},
 			wantErr: true,
 		},
+		{
+			name:    "使えない文字がある",
+			args:    args{[]byte{0x00, 0x02, '1', '%'}},
+			want:    ConnectPayload{},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
