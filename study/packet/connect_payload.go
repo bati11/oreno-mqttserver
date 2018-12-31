@@ -20,7 +20,7 @@ func ToConnectPayload(bs []byte) (ConnectPayload, error) {
 	length := binary.BigEndian.Uint16(bs[0:2])
 	var clientID string
 	if len(bs) < 2+int(length) {
-		clientID = string(bs[2:])
+		return ConnectPayload{}, errors.New("specified length is not equals ClientID length")
 	} else {
 		clientID = string(bs[2 : 2+length])
 	}
