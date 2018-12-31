@@ -37,6 +37,48 @@ func TestToConnectVariableHeader(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "固定ヘッダーのPacketTypeが1ではない",
+			args: args{
+				fixedHeader: packet.FixedHeader{PacketType: 2},
+				bs: []byte{
+					0x00, 0x04, 'M', 'Q', 'T', 'T', // Protocol Name
+					0x04,       // Protocol Level
+					0xCE,       // Connect Flags
+					0x00, 0x0A, // Keep Alive
+				},
+			},
+			want:    packet.ConnectVariableHeader{},
+			wantErr: true,
+		},
+		{
+			name: "Protocol Nameが不正",
+			args: args{
+				fixedHeader: packet.FixedHeader{PacketType: 1},
+				bs: []byte{
+					0x00, 0x04, 'M', 'Q', 'T', 't', // Protocol Name
+					0x04,       // Protocol Level
+					0xCE,       // Connect Flags
+					0x00, 0x0A, // Keep Alive
+				},
+			},
+			want:    packet.ConnectVariableHeader{},
+			wantErr: true,
+		},
+		{
+			name: "Protocol Levelが不正",
+			args: args{
+				fixedHeader: packet.FixedHeader{PacketType: 1},
+				bs: []byte{
+					0x00, 0x04, 'M', 'Q', 'T', 'T', // Protocol Name
+					0x03,       // Protocol Level
+					0xCE,       // Connect Flags
+					0x00, 0x0A, // Keep Alive
+				},
+			},
+			want:    packet.ConnectVariableHeader{},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
