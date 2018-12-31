@@ -65,3 +65,99 @@ func TestToFixedHeader(t *testing.T) {
 		})
 	}
 }
+
+func TestFixedHeader_ToBytes(t *testing.T) {
+	type fields struct {
+		PacketType      byte
+		Dup             byte
+		QoS1            byte
+		QoS2            byte
+		Retain          byte
+		RemainingLength uint
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   []byte
+	}{
+		{
+			"Remining Length = 0",
+			fields{PacketType: 1, Dup: 0, QoS1: 0, QoS2: 0, Retain: 0, RemainingLength: 0},
+			[]byte{
+				0x10,
+				0x00,
+			},
+		},
+		{
+			"Remining Length = 127",
+			fields{PacketType: 1, Dup: 0, QoS1: 0, QoS2: 0, Retain: 0, RemainingLength: 127},
+			[]byte{
+				0x10,
+				0x7F,
+			},
+		},
+		{
+			"Remining Length = 128",
+			fields{PacketType: 1, Dup: 0, QoS1: 0, QoS2: 0, Retain: 0, RemainingLength: 128},
+			[]byte{
+				0x10,
+				0x80, 0x01,
+			},
+		},
+		{
+			"Remining Length = 16383",
+			fields{PacketType: 1, Dup: 0, QoS1: 0, QoS2: 0, Retain: 0, RemainingLength: 16383},
+			[]byte{
+				0x10,
+				0xFF, 0x7F,
+			},
+		},
+		{
+			"Remining Length = 16384",
+			fields{PacketType: 1, Dup: 0, QoS1: 0, QoS2: 0, Retain: 0, RemainingLength: 16384},
+			[]byte{
+				0x10,
+				0x80, 0x80, 0x01,
+			},
+		},
+		{
+			"Remining Length = 2097151",
+			fields{PacketType: 1, Dup: 0, QoS1: 0, QoS2: 0, Retain: 0, RemainingLength: 2097151},
+			[]byte{
+				0x10,
+				0xFF, 0xFF, 0x7F,
+			},
+		},
+		{
+			"Remining Length = 2097152",
+			fields{PacketType: 1, Dup: 0, QoS1: 0, QoS2: 0, Retain: 0, RemainingLength: 2097152},
+			[]byte{
+				0x10,
+				0x80, 0x80, 0x80, 0x01,
+			},
+		},
+		{
+			"Remining Length = 268435455",
+			fields{PacketType: 1, Dup: 0, QoS1: 0, QoS2: 0, Retain: 0, RemainingLength: 268435455},
+			[]byte{
+				0x10,
+				0xFF, 0xFF, 0xFF, 0x7F,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := packet.FixedHeader{
+				PacketType:      tt.fields.PacketType,
+				Dup:             tt.fields.Dup,
+				QoS1:            tt.fields.QoS1,
+				QoS2:            tt.fields.QoS2,
+				Retain:          tt.fields.Retain,
+				RemainingLength: tt.fields.RemainingLength,
+			}
+			if got := h.ToBytes(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("FixedHeader.ToBytes() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

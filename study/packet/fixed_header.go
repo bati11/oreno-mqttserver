@@ -11,6 +11,15 @@ type FixedHeader struct {
 	RemainingLength uint
 }
 
+func (h FixedHeader) ToBytes() []byte {
+	var result []byte
+	b := h.PacketType << 4
+	result = append(result, b)
+	remainingLength := encodeRemainingLength(h.RemainingLength)
+	result = append(result, remainingLength...)
+	return result
+}
+
 func ToFixedHeader(bs []byte) (FixedHeader, error) {
 	if len(bs) <= 1 {
 		return FixedHeader{}, errors.New("len(bs) should be greater than 1")
@@ -51,4 +60,21 @@ func decodeRemainingLength(bs []byte) uint {
 		}
 	}
 	return value
+}
+
+func encodeRemainingLength(x uint) []byte {
+	var encodedByte byte
+	var result []byte
+	for {
+		encodedByte = byte(x % 128)
+		x = x / 128
+		if x > 0 {
+			encodedByte = encodedByte | 128
+		}
+		result = append(result, encodedByte)
+		if x <= 0 {
+			break
+		}
+	}
+	return result
 }
