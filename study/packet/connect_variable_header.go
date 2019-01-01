@@ -1,6 +1,9 @@
 package packet
 
 import (
+	"bufio"
+	"io"
+
 	"github.com/pkg/errors"
 )
 
@@ -20,16 +23,34 @@ type ConnectVariableHeader struct {
 	KeepAlive     uint16
 }
 
-func ToConnectVariableHeader(fixedHeader FixedHeader, bs []byte) (ConnectVariableHeader, error) {
+func ToConnectVariableHeader(fixedHeader FixedHeader, r *bufio.Reader) (ConnectVariableHeader, error) {
 	if fixedHeader.PacketType != 1 {
 		return ConnectVariableHeader{}, errors.New("fixedHeader.PacketType must be 1")
 	}
-	if !isValidProtocolName(bs[:6]) {
+	protocolName := make([]byte, 6)
+	_, err := io.ReadFull(r, protocolName)
+	if err != nil || !isValidProtocolName(protocolName) {
 		return ConnectVariableHeader{}, errors.New("protocol name is invalid")
 	}
-	if bs[6] != 4 {
+	protocolLevel, err := r.ReadByte()
+	if err != nil || protocolLevel != 4 {
 		return ConnectVariableHeader{}, errors.New("protocol level must be 4")
 	}
+
+	// TODO
+	_, err = r.ReadByte() // connectFlags
+	if err != nil {
+		return ConnectVariableHeader{}, err
+	}
+	_, err = r.ReadByte() // keepAlive MSB
+	if err != nil {
+		return ConnectVariableHeader{}, err
+	}
+	_, err = r.ReadByte() // keepAlive LSB
+	if err != nil {
+		return ConnectVariableHeader{}, err
+	}
+
 	return ConnectVariableHeader{
 		ProtocolName:  "MQTT",
 		ProtocolLevel: 4,

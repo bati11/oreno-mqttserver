@@ -1,6 +1,8 @@
 package packet
 
-import "github.com/pkg/errors"
+import (
+	"bufio"
+)
 
 type FixedHeader struct {
 	PacketType      byte
@@ -20,17 +22,20 @@ func (h FixedHeader) ToBytes() []byte {
 	return result
 }
 
-func ToFixedHeader(bs []byte) (FixedHeader, error) {
-	if len(bs) <= 1 {
-		return FixedHeader{}, errors.New("len(bs) should be greater than 1")
+func ToFixedHeader(r *bufio.Reader) (FixedHeader, error) {
+	b, err := r.ReadByte()
+	if err != nil {
+		return FixedHeader{}, err
 	}
-	b := bs[0]
 	packetType := b >> 4
-	dup := refbit(bs[0], 3)
-	qos1 := refbit(bs[0], 2)
-	qos2 := refbit(bs[0], 1)
-	retain := refbit(bs[0], 0)
-	remainingLength := decodeRemainingLength(bs[1:])
+	dup := refbit(b, 3)
+	qos1 := refbit(b, 2)
+	qos2 := refbit(b, 1)
+	retain := refbit(b, 0)
+	remainingLength, err := decodeRemainingLength(r)
+	if err != nil {
+		return FixedHeader{}, err
+	}
 	return FixedHeader{
 		PacketType:      packetType,
 		Dup:             dup,
@@ -46,12 +51,15 @@ func refbit(b byte, n uint) byte {
 }
 
 // a
-func decodeRemainingLength(bs []byte) uint {
+func decodeRemainingLength(r *bufio.Reader) (uint, error) {
 	multiplier := uint(1)
 	var value uint
 	i := uint(0)
 	for ; i < 8; i++ {
-		b := bs[i]
+		b, err := r.ReadByte()
+		if err != nil {
+			return 0, err
+		}
 		digit := b
 		value = value + uint(digit&127)*multiplier
 		multiplier = multiplier * 128
@@ -59,7 +67,7 @@ func decodeRemainingLength(bs []byte) uint {
 			break
 		}
 	}
-	return value
+	return value, nil
 }
 
 func encodeRemainingLength(x uint) []byte {

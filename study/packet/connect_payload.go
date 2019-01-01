@@ -1,7 +1,9 @@
 package packet
 
 import (
+	"bufio"
 	"encoding/binary"
+	"io"
 	"regexp"
 
 	"github.com/pkg/errors"
@@ -13,17 +15,20 @@ type ConnectPayload struct {
 
 var clientIDRegex = regexp.MustCompile("^[a-zA-Z0-9-|]*$")
 
-func ToConnectPayload(bs []byte) (ConnectPayload, error) {
-	if len(bs) < 3 {
-		return ConnectPayload{}, errors.New("payload length is invalid")
+func ToConnectPayload(r *bufio.Reader) (ConnectPayload, error) {
+	lengthBytes := make([]byte, 2)
+	_, err := io.ReadFull(r, lengthBytes)
+	if err != nil {
+		return ConnectPayload{}, err
 	}
-	length := binary.BigEndian.Uint16(bs[0:2])
-	var clientID string
-	if len(bs) < 2+int(length) {
-		return ConnectPayload{}, errors.New("specified length is not equals ClientID length")
-	} else {
-		clientID = string(bs[2 : 2+length])
+	length := binary.BigEndian.Uint16(lengthBytes)
+
+	clientIDBytes := make([]byte, length)
+	_, err = io.ReadFull(r, clientIDBytes)
+	if err != nil {
+		return ConnectPayload{}, err
 	}
+	clientID := string(clientIDBytes)
 	if len(clientID) < 1 || len(clientID) > 23 {
 		return ConnectPayload{}, errors.New("ClientID length is invalid")
 	}
