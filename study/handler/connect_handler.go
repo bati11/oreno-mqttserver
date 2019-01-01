@@ -13,14 +13,18 @@ var variableHeaderLength = 10
 func HandleConnect(fixedHeader packet.FixedHeader, r *bufio.Reader) (packet.Connack, error) {
 	variableHeader, err := packet.ToConnectVariableHeader(fixedHeader, r)
 	if err != nil {
-		// TODO err応じたCONNACKを生成して返す
-		return packet.NewConnackForRefusedByUnacceptableProtocolVersion(), nil
+		if ce, ok := err.(packet.ConnectError); ok {
+			return ce.Connack(), nil
+		}
+		return packet.Connack{}, err
 	}
 
 	payload, err := packet.ToConnectPayload(r)
 	if err != nil {
-		// TODO err応じたCONNACKを生成して返す
-		return packet.NewConnackForRefusedByIdentifierRejected(), nil
+		if ce, ok := err.(packet.ConnectError); ok {
+			return ce.Connack(), nil
+		}
+		return packet.Connack{}, err
 	}
 
 	// TODO variableHeaderとpayloadを使って何かしらの処理

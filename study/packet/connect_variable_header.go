@@ -30,11 +30,11 @@ func ToConnectVariableHeader(fixedHeader FixedHeader, r *bufio.Reader) (ConnectV
 	protocolName := make([]byte, 6)
 	_, err := io.ReadFull(r, protocolName)
 	if err != nil || !isValidProtocolName(protocolName) {
-		return ConnectVariableHeader{}, errors.New("protocol name is invalid")
+		return ConnectVariableHeader{}, RefusedByUnacceptableProtocolVersion("protocol name is invalid")
 	}
 	protocolLevel, err := r.ReadByte()
 	if err != nil || protocolLevel != 4 {
-		return ConnectVariableHeader{}, errors.New("protocol level must be 4")
+		return ConnectVariableHeader{}, RefusedByUnacceptableProtocolVersion("protocol level must be 4")
 	}
 
 	// TODO

@@ -28,24 +28,6 @@ func (c Connack) ToBytes() []byte {
 	return result
 }
 
-func NewConnackForAccepted() Connack {
-	result := newConnack()
-	result.ReturnCode = 0
-	return result
-}
-
-func NewConnackForRefusedByUnacceptableProtocolVersion() Connack {
-	result := newConnack()
-	result.ReturnCode = 1
-	return result
-}
-
-func NewConnackForRefusedByIdentifierRejected() Connack {
-	result := newConnack()
-	result.ReturnCode = 2
-	return result
-}
-
 func newConnack() Connack {
 	fixedHeader := FixedHeader{
 		PacketType:      2,
@@ -53,4 +35,40 @@ func newConnack() Connack {
 	}
 	variableHeader := ConnackVariableHeader{SessionPresent: false}
 	return Connack{fixedHeader, variableHeader}
+}
+
+func NewConnackForAccepted() Connack {
+	result := newConnack()
+	result.ReturnCode = 0
+	return result
+}
+
+type ConnectError interface {
+	Connack() Connack
+	Error() string
+}
+
+type connectError struct {
+	connack Connack
+	msg     string
+}
+
+func (e connectError) Connack() Connack {
+	return e.connack
+}
+
+func (e connectError) Error() string {
+	return e.msg
+}
+
+func RefusedByUnacceptableProtocolVersion(s string) ConnectError {
+	connack := newConnack()
+	connack.ReturnCode = 1
+	return connectError{connack, s}
+}
+
+func RefusedByIdentifierRejected(s string) ConnectError {
+	connack := newConnack()
+	connack.ReturnCode = 2
+	return connectError{connack, s}
 }

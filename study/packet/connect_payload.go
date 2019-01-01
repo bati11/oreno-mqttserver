@@ -5,8 +5,6 @@ import (
 	"encoding/binary"
 	"io"
 	"regexp"
-
-	"github.com/pkg/errors"
 )
 
 type ConnectPayload struct {
@@ -30,10 +28,10 @@ func ToConnectPayload(r *bufio.Reader) (ConnectPayload, error) {
 	}
 	clientID := string(clientIDBytes)
 	if len(clientID) < 1 || len(clientID) > 23 {
-		return ConnectPayload{}, errors.New("ClientID length is invalid")
+		return ConnectPayload{}, RefusedByIdentifierRejected("ClientID length is invalid")
 	}
 	if !clientIDRegex.MatchString(clientID) {
-		return ConnectPayload{}, errors.New("clientId format shoud be \"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\"")
+		return ConnectPayload{}, RefusedByIdentifierRejected("ClientId format shoud be \"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\"")
 	}
 	return ConnectPayload{ClientID: clientID}, nil
 }
