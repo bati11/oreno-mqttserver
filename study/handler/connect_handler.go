@@ -11,6 +11,7 @@ import (
 var variableHeaderLength = 10
 
 func HandleConnect(fixedHeader packet.FixedHeader, r *bufio.Reader) (packet.Connack, error) {
+	fmt.Printf("HandleConnect\n")
 	variableHeader, err := packet.ToConnectVariableHeader(fixedHeader, r)
 	if err != nil {
 		if ce, ok := err.(packet.ConnectError); ok {
@@ -28,8 +29,8 @@ func HandleConnect(fixedHeader packet.FixedHeader, r *bufio.Reader) (packet.Conn
 	}
 
 	// TODO variableHeaderとpayloadを使って何かしらの処理
-	fmt.Printf("%+v\n", variableHeader)
-	fmt.Printf("%+v\n", payload)
+	fmt.Printf("  %#v\n", variableHeader)
+	fmt.Printf("  %#v\n", payload)
 
 	return packet.NewConnackForAccepted(), nil
 }
