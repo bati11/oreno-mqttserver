@@ -4,6 +4,24 @@ import (
 	"bufio"
 )
 
+const (
+	_ = iota
+	CONNECT
+	CONNACK
+	PUBLISH
+	PUBACK
+	PUBREC
+	PUBREL
+	PUBCOMP
+	SUBSCRIBE
+	SUBACK
+	UNSUBSCRIBE
+	UNSUBACK
+	PINGREQ
+	PINGRESP
+	DISCONNECT
+)
+
 type FixedHeader struct {
 	PacketType      byte
 	Dup             byte

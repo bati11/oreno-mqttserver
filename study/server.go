@@ -46,8 +46,7 @@ func handle(conn net.Conn) error {
 		fmt.Printf("-----\n%+v\n", fixedHeader)
 
 		switch fixedHeader.PacketType {
-		// CONNECT
-		case 1:
+		case packet.CONNECT:
 			connack, err := handler.HandleConnect(fixedHeader, r)
 			if err != nil {
 				return err
@@ -56,14 +55,12 @@ func handle(conn net.Conn) error {
 			if err != nil {
 				return err
 			}
-		// PUBLISH
-		case 3:
+		case packet.PUBLISH:
 			err := handler.HandlePublish(fixedHeader, r)
 			if err != nil {
 				return err
 			}
-		// DISCONNECT
-		case 14:
+		case packet.DISCONNECT:
 			return nil
 		}
 	}
