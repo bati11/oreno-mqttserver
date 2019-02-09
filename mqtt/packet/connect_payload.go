@@ -1,9 +1,9 @@
 package packet
 
 import (
+	"bufio"
 	"encoding/binary"
-	"errors"
-	"fmt"
+	"io"
 	"regexp"
 )
 
@@ -11,37 +11,27 @@ type ConnectPayload struct {
 	ClientID string
 }
 
-func (c *ConnectPayload) ToBytes() []byte {
-	return []byte(c.ClientID)
-}
-
 var clientIDRegex = regexp.MustCompile("^[a-zA-Z0-9-|]*$")
 
-var (
-	ErrConnectPayloadLength = errors.New("payload length of connect packet is invalid")
-	ErrClientIDFormat       = errors.New("clientId format shoud be \"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\"")
-)
+func ToConnectPayload(r *bufio.Reader) (ConnectPayload, error) {
+	lengthBytes := make([]byte, 2)
+	_, err := io.ReadFull(r, lengthBytes)
+	if err != nil {
+		return ConnectPayload{}, err
+	}
+	length := binary.BigEndian.Uint16(lengthBytes)
 
-func ToConnectPayload(bs []byte) (ConnectPayload, error) {
-	if len(bs) < 3 {
-		return ConnectPayload{}, ErrConnectPayloadLength
+	clientIDBytes := make([]byte, length)
+	_, err = io.ReadFull(r, clientIDBytes)
+	if err != nil {
+		return ConnectPayload{}, err
 	}
-	length := binary.BigEndian.Uint16(bs[0:2])
-	var s string
-	if len(bs) < 2+int(length) {
-		s = string(bs[2:])
-	} else {
-		s = string(bs[2 : 2+length])
+	clientID := string(clientIDBytes)
+	if len(clientID) < 1 || len(clientID) > 23 {
+		return ConnectPayload{}, RefusedByIdentifierRejected("ClientID length is invalid")
 	}
-	fmt.Println(s)
-	if len(s) < 1 || len(s) > 23 {
-		return ConnectPayload{}, ErrClientIDFormat
+	if !clientIDRegex.MatchString(clientID) {
+		return ConnectPayload{}, RefusedByIdentifierRejected("ClientId format shoud be \"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\"")
 	}
-	if !clientIDRegex.MatchString(s) {
-		return ConnectPayload{}, ErrClientIDFormat
-	}
-	result := ConnectPayload{
-		ClientID: s,
-	}
-	return result, nil
+	return ConnectPayload{ClientID: clientID}, nil
 }

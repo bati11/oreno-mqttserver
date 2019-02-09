@@ -1,109 +1,56 @@
-package packet
+package packet_test
 
 import (
+	"bufio"
+	"bytes"
 	"reflect"
 	"testing"
+
+	"github.com/bati11/oreno-mqtt/mqtt/packet"
 )
 
-func createUint16(x uint16) *uint16 {
-	return &x
-}
-
 func TestToPublishVariableHeader(t *testing.T) {
-
 	type args struct {
-		fixedHeader FixedHeader
-		bs          []byte
+		fixedHeader packet.FixedHeader
+		r           *bufio.Reader
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    PublishVariableHeader
+		want    packet.PublishVariableHeader
 		wantErr bool
 	}{
-		{
-			"QoS0",
-			args{
-				FixedHeader{PacketType: PUBLISH, QoS: QoS0},
-				[]byte{0x00, 0x03, 0x61, 0x2F, 0x62, 0x00, 0x0A}, // a/b
-			},
-			PublishVariableHeader{TopicName: "a/b"},
-			false,
-		},
-		{
-			"QoS1",
-			args{
-				FixedHeader{PacketType: PUBLISH, QoS: QoS1},
-				[]byte{0x00, 0x03, 0x61, 0x2F, 0x62, 0x00, 0x0A}, // a/b, 10
-			},
-			PublishVariableHeader{TopicName: "a/b", PacketIdentifier: createUint16(10)},
-			false,
-		},
-		{
-			"QoS2",
-			args{
-				FixedHeader{PacketType: PUBLISH, QoS: QoS2},
-				[]byte{0x00, 0x03, 0x61, 0x2F, 0x62, 0x00, 0x0A}, // a/b, 10
-			},
-			PublishVariableHeader{TopicName: "a/b", PacketIdentifier: createUint16(10)},
-			false,
-		},
-		{
-			"len = 0",
-			args{
-				FixedHeader{PacketType: PUBLISH, QoS: QoS0},
-				[]byte{},
-			},
-			PublishVariableHeader{},
-			true,
-		},
-		{
-			"len = 2",
-			args{
-				FixedHeader{PacketType: PUBLISH, QoS: QoS0},
-				[]byte{0x00, 0x03},
-			},
-			PublishVariableHeader{},
-			true,
-		},
-		{
-			"Length LSB = 0",
-			args{
-				FixedHeader{PacketType: PUBLISH, QoS: QoS0},
-				[]byte{0x00, 0x00}, // MSB=0, LSB=0
-			},
-			PublishVariableHeader{},
-			true,
-		},
-		{
-			"Contains '#'",
-			args{
-				FixedHeader{PacketType: PUBLISH, QoS: QoS0},
-				[]byte{0x00, 0x03, 0x61, 0x2F, 0x23, 0x00, 0x0A}, // a/#
-			},
-			PublishVariableHeader{},
-			true,
-		},
-		{
-			"Contains '+'",
-			args{
-				FixedHeader{PacketType: PUBLISH, QoS: QoS0},
-				[]byte{0x00, 0x03, 0x61, 0x2F, 0x2B, 0x00, 0x0A}, // a/+
-			},
-			PublishVariableHeader{},
-			true,
-		},
+	// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ToPublishVariableHeader(tt.args.fixedHeader, tt.args.bs)
+			got, err := packet.ToPublishVariableHeader(tt.args.fixedHeader, tt.args.r)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ToPublishVariableHeader() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ToPublishVariableHeader() got = %v, want %v", got, tt.want)
+				t.Errorf("ToPublishVariableHeader() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestPublishVariableHeader_Length(t *testing.T) {
+	fixedHeader := packet.FixedHeader{PacketType: packet.PUBLISH, RemainingLength: 10}
+	variableHeaderBytes := []byte{
+		0x00,             // Length LSB
+		0x03,             // Length MSB
+		0x61, 0x2F, 0x6B, // a/b
+	}
+	want := uint(len(variableHeaderBytes))
+	variableHeader, err := packet.ToPublishVariableHeader(fixedHeader, bufio.NewReader(bytes.NewBuffer(variableHeaderBytes)))
+	if err != nil {
+		t.Errorf("ToPublishVariableHeader() error = %v, wantErr %v", err, false)
+		return
+	}
+	got := variableHeader.Length()
+	if got != want {
+		t.Errorf("PublishVariableHeader.Length() = %v, want %v", got, want)
 	}
 }
