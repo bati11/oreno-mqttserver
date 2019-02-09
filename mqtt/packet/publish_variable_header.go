@@ -2,6 +2,7 @@ package packet
 
 import (
 	"bufio"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"strings"
@@ -25,20 +26,20 @@ func ToPublishVariableHeader(fixedHeader FixedHeader, r *bufio.Reader) (PublishV
 		return PublishVariableHeader{}, fmt.Errorf("packet type is invalid. it got is %v", fixedHeader.PacketType)
 	}
 
-	_, err := r.ReadByte() // lengthMSB
+	lengthMSB, err := r.ReadByte()
 	if err != nil {
 		return PublishVariableHeader{}, err
 	}
-
 	lengthLSB, err := r.ReadByte()
 	if err != nil {
 		return PublishVariableHeader{}, err
 	}
-	if lengthLSB == 0 {
-		return PublishVariableHeader{}, fmt.Errorf("length LSB should be > 0")
+	n := binary.BigEndian.Uint16([]byte{lengthMSB, lengthLSB})
+	if n == 0 {
+		return PublishVariableHeader{}, fmt.Errorf("topic name length should be > 0")
 	}
 
-	topicNameBytes := make([]byte, lengthLSB)
+	topicNameBytes := make([]byte, n)
 	_, err = io.ReadFull(r, topicNameBytes)
 	if err != nil {
 		return PublishVariableHeader{}, err

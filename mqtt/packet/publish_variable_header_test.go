@@ -20,7 +20,32 @@ func TestToPublishVariableHeader(t *testing.T) {
 		want    packet.PublishVariableHeader
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		{
+			name: "a/b",
+			args: args{
+				packet.FixedHeader{PacketType: packet.PUBLISH, RemainingLength: 10},
+				bufio.NewReader(bytes.NewBuffer([]byte{
+					0x00,             // Length LSB
+					0x03,             // Length MSB
+					0x61, 0x2F, 0x62, // a/b
+				})),
+			},
+			want:    packet.PublishVariableHeader{TopicName: "a/b", PacketIdentifier: nil},
+			wantErr: false,
+		},
+		{
+			name: "256文字",
+			args: args{
+				packet.FixedHeader{PacketType: packet.PUBLISH, RemainingLength: 10},
+				bufio.NewReader(bytes.NewBuffer([]byte{
+					0x01,
+					0x00,
+					'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5',
+				})),
+			},
+			want:    packet.PublishVariableHeader{TopicName: "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345"},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -41,7 +66,7 @@ func TestPublishVariableHeader_Length(t *testing.T) {
 	variableHeaderBytes := []byte{
 		0x00,             // Length LSB
 		0x03,             // Length MSB
-		0x61, 0x2F, 0x6B, // a/b
+		0x61, 0x2F, 0x62, // a/b
 	}
 	want := uint(len(variableHeaderBytes))
 	variableHeader, err := packet.ToPublishVariableHeader(fixedHeader, bufio.NewReader(bytes.NewBuffer(variableHeaderBytes)))
