@@ -1,49 +1,62 @@
-package packet_test
+package packet
 
 import (
-	"fmt"
+	"bufio"
+	"bytes"
 	"reflect"
 	"testing"
-
-	"github.com/bati11/oreno-mqtt/mqtt/packet"
 )
 
 func TestToConnectPayload(t *testing.T) {
-	cases := []struct {
-		in        []byte
-		want      string
-		wantError bool
-		err       error
+	type args struct {
+		r *bufio.Reader
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    ConnectPayload
+		wantErr bool
 	}{
 		{
-			[]byte{0x00, 0x04, 'h', 'o', 'g', 'e'}, "hoge",
-			false, nil,
+			name:    "ClientIDが1文字",
+			args:    args{bufio.NewReader(bytes.NewBuffer([]byte{0x00, 0x01, 'a'}))},
+			want:    ConnectPayload{ClientID: "a"},
+			wantErr: false,
 		},
 		{
-			[]byte{0x00, 0x04, 'h', 'o', 'g'}, "hog",
-			false, nil,
+			name:    "ペイロードが0byte",
+			args:    args{bufio.NewReader(bytes.NewBuffer([]byte{}))},
+			want:    ConnectPayload{},
+			wantErr: true,
 		},
 		{
-			[]byte{}, "",
-			true, packet.ErrConnectPayloadLength,
+			name:    "ClientIDが23文字を超える",
+			args:    args{bufio.NewReader(bytes.NewBuffer([]byte{0x00, 0x18, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'a', 'b', 'c', 'd'}))},
+			want:    ConnectPayload{},
+			wantErr: true,
 		},
 		{
-			[]byte{0x00, 0x01, '*'}, "",
-			true, packet.ErrClientIDFormat,
+			name:    "使えない文字がある",
+			args:    args{bufio.NewReader(bytes.NewBuffer([]byte{0x00, 0x02, '1', '%'}))},
+			want:    ConnectPayload{},
+			wantErr: true,
+		},
+		{
+			name:    "指定された長さよりも実際に取得できたClientIDが短い",
+			args:    args{bufio.NewReader(bytes.NewBuffer([]byte{0x00, 0x03, '1', '2'}))},
+			want:    ConnectPayload{},
+			wantErr: true,
 		},
 	}
-	for _, tt := range cases {
-		t.Run(fmt.Sprintf("%q", tt.in), func(t *testing.T) {
-			connectPayload, err := packet.ToConnectPayload(tt.in)
-			if !tt.wantError && (err != nil) {
-				t.Fatalf("want no err, but %#v", err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ToConnectPayload(tt.args.r)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ToConnectPayload() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
-			if tt.wantError && !(reflect.DeepEqual(err, tt.err)) {
-				t.Fatalf("want %v, but %#v", tt.err, err)
-			}
-
-			if !tt.wantError && connectPayload.ClientID != tt.want {
-				t.Fatalf("connectPayload.ClientID: got %v, want %v", connectPayload.ClientID, tt.want)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ToConnectPayload() = %v, want %v", got, tt.want)
 			}
 		})
 	}

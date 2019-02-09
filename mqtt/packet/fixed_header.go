@@ -1,19 +1,11 @@
-/*
-Package packet implements packets of MQTT.
-
-*/
 package packet
 
 import (
 	"bufio"
-	"encoding/binary"
-	"errors"
 )
 
-type PacketType uint8
-
 const (
-	Reserved PacketType = iota
+	_ = iota
 	CONNECT
 	CONNACK
 	PUBLISH
@@ -28,118 +20,55 @@ const (
 	PINGREQ
 	PINGRESP
 	DISCONNECT
-	Reserved2
 )
 
-type QoS uint8
-
-const (
-	QoS0 QoS = iota
-	QoS1
-	QoS2
-	QoSReserved
-)
-
-func toQoS(qosBit1 bool, qosBit2 bool) QoS {
-	var qos QoS
-	if !qosBit1 && !qosBit2 {
-		qos = QoS0
-	} else if !qosBit1 && qosBit2 {
-		qos = QoS1
-	} else if qosBit1 && !qosBit2 {
-		qos = QoS2
-	} else {
-		qos = QoSReserved
-	}
-	return qos
-}
-
-func (p PacketType) string() string {
-	switch p {
-	case Reserved:
-		return "Reserved"
-	case CONNECT:
-		return "CONNECT"
-	default:
-		return "unknown"
-	}
-}
-
-func (p PacketType) byte() byte {
-	return byte(p)
-}
-
-// FixedHeader is part of MQTT Control Packet.
 type FixedHeader struct {
-	PacketType      PacketType
-	Dup             bool
-	QoS             QoS
-	Retain          bool
+	PacketType      byte
+	Dup             byte
+	QoS1            byte
+	QoS2            byte
+	Retain          byte
 	RemainingLength uint
 }
 
-var (
-	ErrBytesLength     = errors.New("fixed header bytes length should be => 2")
-	ErrPacketTypeValue = errors.New("packet type is between 0 and 15")
-)
+func (h FixedHeader) ToBytes() []byte {
+	var result []byte
+	b := h.PacketType << 4
+	result = append(result, b)
+	remainingLength := encodeRemainingLength(h.RemainingLength)
+	result = append(result, remainingLength...)
+	return result
+}
 
-// ToFixedHeader converts bytes into a FixedHeader structure.
 func ToFixedHeader(r *bufio.Reader) (FixedHeader, error) {
 	b, err := r.ReadByte()
 	if err != nil {
 		return FixedHeader{}, err
 	}
 	packetType := b >> 4
-	if packetType < 0 || 15 < packetType {
-		return FixedHeader{}, ErrBytesLength
-	}
-	dup := refbit(b, 3) > 0
-	qosBit1 := refbit(b, 2) > 0
-	qosBit2 := refbit(b, 1) > 0
-	qos := toQoS(qosBit1, qosBit2)
-	retain := refbit(b, 0) > 0
+	dup := refbit(b, 3)
+	qos1 := refbit(b, 2)
+	qos2 := refbit(b, 1)
+	retain := refbit(b, 0)
 	remainingLength, err := decodeRemainingLength(r)
 	if err != nil {
 		return FixedHeader{}, err
 	}
-	result := FixedHeader{
-		PacketType:      PacketType(packetType),
+	return FixedHeader{
+		PacketType:      packetType,
 		Dup:             dup,
-		QoS:             qos,
+		QoS1:            qos1,
+		QoS2:            qos2,
 		Retain:          retain,
 		RemainingLength: remainingLength,
-	}
-	return result, nil
+	}, nil
 }
 
-func (h *FixedHeader) ToBytes() []byte {
-	var result []byte
-	b := h.PacketType.byte() << 4
-	if h.Dup {
-		b = onbit(b, 4)
-	}
-	if h.QoS == QoS1 {
-		b = onbit(b, 2)
-	} else if h.QoS == QoS2 {
-		b = onbit(b, 1)
-	}
-	if h.Retain {
-		b = onbit(b, 0)
-	}
-	result = append(result, b)
-	remainingLength := h.encodeRemainingLength()
-	result = append(result, remainingLength...)
-	return result
+func refbit(b byte, n uint) byte {
+	return (b >> n) & 1
 }
 
-func refbit(b byte, i uint) byte {
-	return (b >> i) & 1
-}
-
-func onbit(b byte, i uint) byte {
-	return b | (1 << i)
-}
-
+// a
 func decodeRemainingLength(r *bufio.Reader) (uint, error) {
 	multiplier := uint(1)
 	var value uint
@@ -159,19 +88,19 @@ func decodeRemainingLength(r *bufio.Reader) (uint, error) {
 	return value, nil
 }
 
-func (h *FixedHeader) encodeRemainingLength() []byte {
-	x := h.RemainingLength
-	var encodedByte uint64
+func encodeRemainingLength(x uint) []byte {
+	var encodedByte byte
+	var result []byte
 	for {
-		encodedByte = uint64(x % 128)
+		encodedByte = byte(x % 128)
 		x = x / 128
 		if x > 0 {
 			encodedByte = encodedByte | 128
-		} else {
+		}
+		result = append(result, encodedByte)
+		if x <= 0 {
 			break
 		}
 	}
-	buf := make([]byte, binary.MaxVarintLen32)
-	n := binary.PutUvarint(buf, encodedByte)
-	return buf[:n]
+	return result
 }
