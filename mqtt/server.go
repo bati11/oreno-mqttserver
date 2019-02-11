@@ -25,6 +25,7 @@ func Run() {
 
 		err = handle(conn)
 		if err != nil {
+			fmt.Printf("%v", err)
 			panic(err)
 		}
 	}
@@ -66,6 +67,15 @@ func handle(conn net.Conn) error {
 				return err
 			}
 			_, err = conn.Write(suback.ToBytes())
+			if err != nil {
+				return err
+			}
+		case packet.PINGREQ:
+			pingresp, err := handler.HandlePingreq(fixedHeader, r)
+			if err != nil {
+				return err
+			}
+			_, err = conn.Write(pingresp.ToBytes())
 			if err != nil {
 				return err
 			}
