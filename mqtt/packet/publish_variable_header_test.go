@@ -11,7 +11,7 @@ import (
 
 func TestToPublishVariableHeader(t *testing.T) {
 	type args struct {
-		fixedHeader packet.FixedHeader
+		fixedHeader packet.PublishFixedHeader
 		r           *bufio.Reader
 	}
 	tests := []struct {
@@ -23,7 +23,7 @@ func TestToPublishVariableHeader(t *testing.T) {
 		{
 			name: "a/b",
 			args: args{
-				packet.FixedHeader{PacketType: packet.PUBLISH, RemainingLength: 10},
+				packet.PublishFixedHeader{PacketType: packet.PUBLISH, RemainingLength: 10},
 				bufio.NewReader(bytes.NewBuffer([]byte{
 					0x00,             // Length LSB
 					0x03,             // Length MSB
@@ -36,7 +36,7 @@ func TestToPublishVariableHeader(t *testing.T) {
 		{
 			name: "256文字",
 			args: args{
-				packet.FixedHeader{PacketType: packet.PUBLISH, RemainingLength: 10},
+				packet.PublishFixedHeader{PacketType: packet.PUBLISH, RemainingLength: 10},
 				bufio.NewReader(bytes.NewBuffer([]byte{
 					0x01,
 					0x00,
@@ -62,7 +62,7 @@ func TestToPublishVariableHeader(t *testing.T) {
 }
 
 func TestPublishVariableHeader_Length(t *testing.T) {
-	fixedHeader := packet.FixedHeader{PacketType: packet.PUBLISH, RemainingLength: 10}
+	fixedHeader := packet.PublishFixedHeader{PacketType: packet.PUBLISH, RemainingLength: 10}
 	variableHeaderBytes := []byte{
 		0x00,             // Length LSB
 		0x03,             // Length MSB

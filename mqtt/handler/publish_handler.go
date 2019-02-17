@@ -8,7 +8,7 @@ import (
 	"github.com/bati11/oreno-mqtt/mqtt/packet"
 )
 
-func HandlePublish(fixedHeader packet.FixedHeader, r *bufio.Reader) error {
+func HandlePublish(fixedHeader packet.PublishFixedHeader, r *bufio.Reader) error {
 	fmt.Printf("  HandlePublish\n")
 	variableHeader, err := packet.ToPublishVariableHeader(fixedHeader, r)
 	if err != nil {

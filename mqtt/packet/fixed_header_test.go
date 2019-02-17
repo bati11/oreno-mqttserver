@@ -20,42 +20,42 @@ func TestToFixedHeader(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "[0x00,0x00]",
+			name: "[0x30,0x00]",
 			args: args{bufio.NewReader(bytes.NewBuffer([]byte{
-				0x00, // 0000 0 00 0
+				0x30, // 0000 0 00 0
 				0x00, // 0
 			}))},
-			want:    packet.FixedHeader{PacketType: 0, Dup: 0, QoS1: 0, QoS2: 0, Retain: 0, RemainingLength: 0},
+			want:    packet.PublishFixedHeader{PacketType: 3, Dup: 0, QoS1: 0, QoS2: 0, Retain: 0, RemainingLength: 0},
 			wantErr: false,
 		},
 		{
-			name: "[0x1b,0x7F]",
+			name: "[0x3b,0x7F]",
 			args: args{bufio.NewReader(bytes.NewBuffer([]byte{
-				0x1B, // 0001 1 01 1
+				0x3B, // 0003 1 01 1
 				0x7F, // 127
 			}))},
-			want:    packet.FixedHeader{PacketType: 1, Dup: 1, QoS1: 0, QoS2: 1, Retain: 1, RemainingLength: 127},
+			want:    packet.PublishFixedHeader{PacketType: 3, Dup: 1, QoS1: 0, QoS2: 1, Retain: 1, RemainingLength: 127},
 			wantErr: false,
 		},
 		{
-			name: "[0x24,0x80,0x01]",
+			name: "[0x34,0x80,0x01]",
 			args: args{bufio.NewReader(bytes.NewBuffer([]byte{
-				0x24,       // 0002 0 10 0
+				0x34,       // 0002 0 10 0
 				0x80, 0x01, //128
 			}))},
-			want:    packet.FixedHeader{PacketType: 2, Dup: 0, QoS1: 1, QoS2: 0, Retain: 0, RemainingLength: 128},
+			want:    packet.PublishFixedHeader{PacketType: 3, Dup: 0, QoS1: 1, QoS2: 0, Retain: 0, RemainingLength: 128},
 			wantErr: false,
 		},
 		{
 			name:    "[]",
 			args:    args{bufio.NewReader(bytes.NewBuffer(nil))},
-			want:    packet.FixedHeader{},
+			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "[0x24]",
 			args:    args{bufio.NewReader(bytes.NewBuffer([]byte{0x24}))},
-			want:    packet.FixedHeader{},
+			want:    nil,
 			wantErr: true,
 		},
 	}
@@ -154,7 +154,7 @@ func TestFixedHeader_ToBytes(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := packet.FixedHeader{
+			h := packet.PublishFixedHeader{
 				PacketType:      tt.fields.PacketType,
 				Dup:             tt.fields.Dup,
 				QoS1:            tt.fields.QoS1,
@@ -163,7 +163,7 @@ func TestFixedHeader_ToBytes(t *testing.T) {
 				RemainingLength: tt.fields.RemainingLength,
 			}
 			if got := h.ToBytes(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("FixedHeader.ToBytes() = %v, want %v", got, tt.want)
+				t.Errorf("PublishFixedHeader.ToBytes() = %v, want %v", got, tt.want)
 			}
 		})
 	}
