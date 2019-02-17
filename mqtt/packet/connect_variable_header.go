@@ -23,7 +23,7 @@ type ConnectVariableHeader struct {
 	KeepAlive     uint16
 }
 
-func ToConnectVariableHeader(fixedHeader FixedHeader, r *bufio.Reader) (ConnectVariableHeader, error) {
+func ToConnectVariableHeader(fixedHeader DefaultFixedHeader, r *bufio.Reader) (ConnectVariableHeader, error) {
 	if fixedHeader.PacketType != 1 {
 		return ConnectVariableHeader{}, errors.New("fixedHeader.PacketType must be 1")
 	}

@@ -1,17 +1,17 @@
 package packet
 
 type Pingresp struct {
-	FixedHeader
+	DefaultFixedHeader
 }
 
 func (p *Pingresp) ToBytes() []byte {
 	var result []byte
-	result = append(result, p.FixedHeader.ToBytes()...)
+	result = append(result, p.DefaultFixedHeader.ToBytes()...)
 	return result
 }
 
 func NewPingresp() Pingresp {
-	fixedHeader := FixedHeader{
+	fixedHeader := DefaultFixedHeader{
 		PacketType:      PINGRESP,
 		RemainingLength: 0,
 	}

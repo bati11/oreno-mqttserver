@@ -7,7 +7,7 @@ import (
 	"github.com/bati11/oreno-mqtt/mqtt/packet"
 )
 
-func HandleSubscribe(fixedHeader packet.FixedHeader, r *bufio.Reader) (packet.Suback, error) {
+func HandleSubscribe(fixedHeader packet.DefaultFixedHeader, r *bufio.Reader) (packet.Suback, error) {
 	fmt.Printf("  HandleSubscribe\n")
 	variableHeader, err := packet.ToSubscribeVariableHeader(fixedHeader, r)
 	if err != nil {

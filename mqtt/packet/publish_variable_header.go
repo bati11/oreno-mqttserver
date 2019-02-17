@@ -21,7 +21,7 @@ func (p *PublishVariableHeader) Length() uint {
 	return result
 }
 
-func ToPublishVariableHeader(fixedHeader FixedHeader, r *bufio.Reader) (PublishVariableHeader, error) {
+func ToPublishVariableHeader(fixedHeader PublishFixedHeader, r *bufio.Reader) (PublishVariableHeader, error) {
 	if fixedHeader.PacketType != 3 {
 		return PublishVariableHeader{}, fmt.Errorf("packet type is invalid. it got is %v", fixedHeader.PacketType)
 	}

@@ -17,19 +17,19 @@ func (h ConnackVariableHeader) ToBytes() []byte {
 }
 
 type Connack struct {
-	FixedHeader
+	DefaultFixedHeader
 	ConnackVariableHeader
 }
 
 func (c Connack) ToBytes() []byte {
 	var result []byte
-	result = append(result, c.FixedHeader.ToBytes()...)
+	result = append(result, c.DefaultFixedHeader.ToBytes()...)
 	result = append(result, c.ConnackVariableHeader.ToBytes()...)
 	return result
 }
 
 func newConnack() Connack {
-	fixedHeader := FixedHeader{
+	fixedHeader := DefaultFixedHeader{
 		PacketType:      2,
 		RemainingLength: 2,
 	}

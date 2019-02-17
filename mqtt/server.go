@@ -2,6 +2,7 @@ package mqtt
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -36,7 +37,7 @@ func handle(conn net.Conn) error {
 
 	for {
 		r := bufio.NewReader(conn)
-		fixedHeader, err := packet.ToFixedHeader(r)
+		h, err := packet.ToFixedHeader(r)
 		if err != nil {
 			if err == io.EOF {
 				// クライアント側から既に切断してる場合
@@ -44,43 +45,48 @@ func handle(conn net.Conn) error {
 			}
 			return err
 		}
-		fmt.Printf("-----\n%+v\n", fixedHeader)
+		fmt.Printf("-----\n%+v\n", h)
 
-		switch fixedHeader.PacketType {
-		case packet.CONNECT:
-			connack, err := handler.HandleConnect(fixedHeader, r)
-			if err != nil {
-				return err
-			}
-			_, err = conn.Write(connack.ToBytes())
-			if err != nil {
-				return err
-			}
-		case packet.PUBLISH:
+		switch fixedHeader := h.(type) {
+		case packet.PublishFixedHeader:
 			err := handler.HandlePublish(fixedHeader, r)
 			if err != nil {
 				return err
 			}
-		case packet.SUBSCRIBE:
-			suback, err := handler.HandleSubscribe(fixedHeader, r)
-			if err != nil {
-				return err
+		case packet.DefaultFixedHeader:
+			switch fixedHeader.PacketType {
+			case packet.CONNECT:
+				connack, err := handler.HandleConnect(fixedHeader, r)
+				if err != nil {
+					return err
+				}
+				_, err = conn.Write(connack.ToBytes())
+				if err != nil {
+					return err
+				}
+			case packet.SUBSCRIBE:
+				suback, err := handler.HandleSubscribe(fixedHeader, r)
+				if err != nil {
+					return err
+				}
+				_, err = conn.Write(suback.ToBytes())
+				if err != nil {
+					return err
+				}
+			case packet.PINGREQ:
+				pingresp, err := handler.HandlePingreq(fixedHeader, r)
+				if err != nil {
+					return err
+				}
+				_, err = conn.Write(pingresp.ToBytes())
+				if err != nil {
+					return err
+				}
+			case packet.DISCONNECT:
+				return nil
 			}
-			_, err = conn.Write(suback.ToBytes())
-			if err != nil {
-				return err
-			}
-		case packet.PINGREQ:
-			pingresp, err := handler.HandlePingreq(fixedHeader, r)
-			if err != nil {
-				return err
-			}
-			_, err = conn.Write(pingresp.ToBytes())
-			if err != nil {
-				return err
-			}
-		case packet.DISCONNECT:
-			return nil
+		default:
+			panic(errors.New("unknown fixed header type"))
 		}
 	}
 }

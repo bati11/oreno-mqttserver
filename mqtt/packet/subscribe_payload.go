@@ -15,7 +15,7 @@ type SubscribePayload struct {
 	TopicFilterPairs []*TopicFilterPair
 }
 
-func ToSubscribePayload(fixedHeader FixedHeader, variableHeader SubscribeVariableHeader, r *bufio.Reader) (SubscribePayload, error) {
+func ToSubscribePayload(fixedHeader DefaultFixedHeader, variableHeader SubscribeVariableHeader, r *bufio.Reader) (SubscribePayload, error) {
 	if fixedHeader.PacketType != SUBSCRIBE {
 		return SubscribePayload{}, fmt.Errorf("packet type is invalid. it got is %v", fixedHeader.PacketType)
 	}

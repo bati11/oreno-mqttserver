@@ -22,7 +22,27 @@ const (
 	DISCONNECT
 )
 
-type FixedHeader struct {
+type FixedHeader interface {
+	ToBytes() []byte
+}
+
+type DefaultFixedHeader struct {
+	PacketType      byte
+	Reserved        byte
+	RemainingLength uint
+}
+
+func (h DefaultFixedHeader) ToBytes() []byte {
+	var result []byte
+	b := h.PacketType << 4
+	b = b + h.Reserved
+	result = append(result, b)
+	remainingLength := encodeRemainingLength(h.RemainingLength)
+	result = append(result, remainingLength...)
+	return result
+}
+
+type PublishFixedHeader struct {
 	PacketType      byte
 	Dup             byte
 	QoS1            byte
@@ -31,7 +51,7 @@ type FixedHeader struct {
 	RemainingLength uint
 }
 
-func (h FixedHeader) ToBytes() []byte {
+func (h PublishFixedHeader) ToBytes() []byte {
 	var result []byte
 	b := h.PacketType << 4
 	result = append(result, b)
@@ -43,25 +63,39 @@ func (h FixedHeader) ToBytes() []byte {
 func ToFixedHeader(r *bufio.Reader) (FixedHeader, error) {
 	b, err := r.ReadByte()
 	if err != nil {
-		return FixedHeader{}, err
+		return nil, err
 	}
 	packetType := b >> 4
-	dup := refbit(b, 3)
-	qos1 := refbit(b, 2)
-	qos2 := refbit(b, 1)
-	retain := refbit(b, 0)
-	remainingLength, err := decodeRemainingLength(r)
-	if err != nil {
-		return FixedHeader{}, err
+
+	if packetType == PUBLISH {
+		dup := refbit(b, 3)
+		qos1 := refbit(b, 2)
+		qos2 := refbit(b, 1)
+		retain := refbit(b, 0)
+		remainingLength, err := decodeRemainingLength(r)
+		if err != nil {
+			return nil, err
+		}
+		return PublishFixedHeader{
+			PacketType:      packetType,
+			Dup:             dup,
+			QoS1:            qos1,
+			QoS2:            qos2,
+			Retain:          retain,
+			RemainingLength: remainingLength,
+		}, nil
+	} else {
+		reserved := b >> 4
+		remainingLength, err := decodeRemainingLength(r)
+		if err != nil {
+			return nil, err
+		}
+		return DefaultFixedHeader{
+			PacketType:      packetType,
+			Reserved:        reserved,
+			RemainingLength: remainingLength,
+		}, nil
 	}
-	return FixedHeader{
-		PacketType:      packetType,
-		Dup:             dup,
-		QoS1:            qos1,
-		QoS2:            qos2,
-		Retain:          retain,
-		RemainingLength: remainingLength,
-	}, nil
 }
 
 func refbit(b byte, n uint) byte {

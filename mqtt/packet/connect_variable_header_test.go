@@ -11,7 +11,7 @@ import (
 
 func TestToConnectVariableHeader(t *testing.T) {
 	type args struct {
-		fixedHeader packet.FixedHeader
+		fixedHeader packet.DefaultFixedHeader
 		r           *bufio.Reader
 	}
 	tests := []struct {
@@ -23,7 +23,7 @@ func TestToConnectVariableHeader(t *testing.T) {
 		{
 			name: "仕様書のexample",
 			args: args{
-				fixedHeader: packet.FixedHeader{PacketType: 1},
+				fixedHeader: packet.DefaultFixedHeader{PacketType: 1},
 				r: bufio.NewReader(bytes.NewBuffer([]byte{
 					0x00, 0x04, 'M', 'Q', 'T', 'T', // Protocol Name
 					0x04,       // Protocol Level
@@ -42,7 +42,7 @@ func TestToConnectVariableHeader(t *testing.T) {
 		{
 			name: "固定ヘッダーのPacketTypeが1ではない",
 			args: args{
-				fixedHeader: packet.FixedHeader{PacketType: 2},
+				fixedHeader: packet.DefaultFixedHeader{PacketType: 2},
 				r: bufio.NewReader(bytes.NewReader([]byte{
 					0x00, 0x04, 'M', 'Q', 'T', 'T', // Protocol Name
 					0x04,       // Protocol Level
@@ -56,7 +56,7 @@ func TestToConnectVariableHeader(t *testing.T) {
 		{
 			name: "Protocol Nameが不正",
 			args: args{
-				fixedHeader: packet.FixedHeader{PacketType: 1},
+				fixedHeader: packet.DefaultFixedHeader{PacketType: 1},
 				r: bufio.NewReader(bytes.NewReader([]byte{
 					0x00, 0x04, 'M', 'Q', 'T', 't', // Protocol Name
 					0x04,       // Protocol Level
@@ -70,7 +70,7 @@ func TestToConnectVariableHeader(t *testing.T) {
 		{
 			name: "Protocol Levelが不正",
 			args: args{
-				fixedHeader: packet.FixedHeader{PacketType: 1},
+				fixedHeader: packet.DefaultFixedHeader{PacketType: 1},
 				r: bufio.NewReader(bytes.NewReader([]byte{
 					0x00, 0x04, 'M', 'Q', 'T', 'T', // Protocol Name
 					0x03,       // Protocol Level

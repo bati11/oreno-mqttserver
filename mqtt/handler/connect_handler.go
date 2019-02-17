@@ -10,7 +10,7 @@ import (
 // CONNECTパケットの可変ヘッダーのバイト数
 var variableHeaderLength = 10
 
-func HandleConnect(fixedHeader packet.FixedHeader, r *bufio.Reader) (packet.Connack, error) {
+func HandleConnect(fixedHeader packet.DefaultFixedHeader, r *bufio.Reader) (packet.Connack, error) {
 	fmt.Printf("HandleConnect\n")
 	variableHeader, err := packet.ToConnectVariableHeader(fixedHeader, r)
 	if err != nil {
