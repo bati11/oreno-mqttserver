@@ -2,6 +2,7 @@ package packet
 
 import (
 	"bufio"
+	"io"
 )
 
 const (
@@ -22,12 +23,30 @@ const (
 	DISCONNECT
 )
 
+type MQTTReader struct {
+	byte1 *byte
+	r     *bufio.Reader
+}
+
+func NewMQTTReader(r io.Reader) *MQTTReader {
+	bufr := bufio.NewReader(r)
+	return &MQTTReader{r: bufr}
+}
+
+func (d *MQTTReader) ReadPacketType() (uint8, error) {
+	if d.byte1 == nil {
+		byte1, err := d.r.ReadByte()
+		if err != nil {
+			return 0, err
+		}
+		d.byte1 = &byte1
+	}
+	return *d.byte1 >> 4, nil
+}
+
 type FixedHeader struct {
 	PacketType      byte
-	Dup             byte
-	QoS1            byte
-	QoS2            byte
-	Retain          byte
+	Reserved        byte
 	RemainingLength uint
 }
 
@@ -40,21 +59,55 @@ func (h FixedHeader) ToBytes() []byte {
 	return result
 }
 
-func ToFixedHeader(r *bufio.Reader) (FixedHeader, error) {
-	b, err := r.ReadByte()
+func ToFixedHeader(reader *MQTTReader) (FixedHeader, error) {
+	packetType, err := reader.ReadPacketType()
 	if err != nil {
 		return FixedHeader{}, err
 	}
-	packetType := b >> 4
-	dup := refbit(b, 3)
-	qos1 := refbit(b, 2)
-	qos2 := refbit(b, 1)
-	retain := refbit(b, 0)
-	remainingLength, err := decodeRemainingLength(r)
+	reserved := *reader.byte1 >> 4
+	remainingLength, err := decodeRemainingLength(reader.r)
 	if err != nil {
 		return FixedHeader{}, err
 	}
 	return FixedHeader{
+		PacketType:      packetType,
+		Reserved:        reserved,
+		RemainingLength: remainingLength,
+	}, nil
+}
+
+type PublishFixedHeader struct {
+	PacketType      byte
+	Dup             byte
+	QoS1            byte
+	QoS2            byte
+	Retain          byte
+	RemainingLength uint
+}
+
+func (h PublishFixedHeader) ToBytes() []byte {
+	var result []byte
+	b := h.PacketType << 4
+	result = append(result, b)
+	remainingLength := encodeRemainingLength(h.RemainingLength)
+	result = append(result, remainingLength...)
+	return result
+}
+
+func ToPublishFixedHeader(reader *MQTTReader) (PublishFixedHeader, error) {
+	packetType, err := reader.ReadPacketType()
+	if err != nil {
+		return PublishFixedHeader{}, err
+	}
+	dup := refbit(*reader.byte1, 3)
+	qos1 := refbit(*reader.byte1, 2)
+	qos2 := refbit(*reader.byte1, 1)
+	retain := refbit(*reader.byte1, 0)
+	remainingLength, err := decodeRemainingLength(reader.r)
+	if err != nil {
+		return PublishFixedHeader{}, err
+	}
+	return PublishFixedHeader{
 		PacketType:      packetType,
 		Dup:             dup,
 		QoS1:            qos1,

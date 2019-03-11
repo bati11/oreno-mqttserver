@@ -35,7 +35,8 @@ func handle(conn net.Conn) error {
 
 	for {
 		r := bufio.NewReader(conn)
-		fixedHeader, err := packet.ToFixedHeader(r)
+		mqttReader := packet.NewMQTTReader(r)
+		packetType, err := mqttReader.ReadPacketType()
 		if err != nil {
 			if err == io.EOF {
 				// クライアント側から既に切断してる場合
@@ -43,25 +44,35 @@ func handle(conn net.Conn) error {
 			}
 			return err
 		}
-		fmt.Printf("-----\n%+v\n", fixedHeader)
-
-		switch fixedHeader.PacketType {
-		case packet.CONNECT:
-			connack, err := handler.HandleConnect(fixedHeader, r)
+		if packetType == packet.PUBLISH {
+			fixedHeader, err := packet.ToPublishFixedHeader(mqttReader)
 			if err != nil {
 				return err
 			}
-			_, err = conn.Write(connack.ToBytes())
+			fmt.Printf("-----\n%+v\n", fixedHeader)
+			err = handler.HandlePublish(fixedHeader, r)
 			if err != nil {
 				return err
 			}
-		case packet.PUBLISH:
-			err := handler.HandlePublish(fixedHeader, r)
+		} else {
+			fixedHeader, err := packet.ToFixedHeader(mqttReader)
 			if err != nil {
 				return err
 			}
-		case packet.DISCONNECT:
-			return nil
+			fmt.Printf("-----\n%+v\n", fixedHeader)
+			switch fixedHeader.PacketType {
+			case packet.CONNECT:
+				connack, err := handler.HandleConnect(fixedHeader, r)
+				if err != nil {
+					return err
+				}
+				_, err = conn.Write(connack.ToBytes())
+				if err != nil {
+					return err
+				}
+			case packet.DISCONNECT:
+				return nil
+			}
 		}
 	}
 }
