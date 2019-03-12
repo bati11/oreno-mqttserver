@@ -1,7 +1,6 @@
 package packet
 
 import (
-	"bufio"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -21,35 +20,31 @@ func (p *PublishVariableHeader) Length() uint {
 	return result
 }
 
-func ToPublishVariableHeader(fixedHeader PublishFixedHeader, r *bufio.Reader) (PublishVariableHeader, error) {
-	if fixedHeader.PacketType != 3 {
-		return PublishVariableHeader{}, fmt.Errorf("packet type is invalid. it got is %v", fixedHeader.PacketType)
-	}
-
-	lengthMSB, err := r.ReadByte()
+func (reader *MQTTReader) readPublishVariableHeader() (*PublishVariableHeader, error) {
+	lengthMSB, err := reader.r.ReadByte()
 	if err != nil {
-		return PublishVariableHeader{}, err
+		return nil, err
 	}
-	lengthLSB, err := r.ReadByte()
+	lengthLSB, err := reader.r.ReadByte()
 	if err != nil {
-		return PublishVariableHeader{}, err
+		return nil, err
 	}
 	n := binary.BigEndian.Uint16([]byte{lengthMSB, lengthLSB})
 	if n == 0 {
-		return PublishVariableHeader{}, fmt.Errorf("topic name length should be > 0")
+		return nil, fmt.Errorf("topic name length should be > 0")
 	}
 
 	topicNameBytes := make([]byte, n)
-	_, err = io.ReadFull(r, topicNameBytes)
+	_, err = io.ReadFull(reader.r, topicNameBytes)
 	if err != nil {
-		return PublishVariableHeader{}, err
+		return nil, err
 	}
 
 	topicName := string(topicNameBytes)
 	if strings.ContainsAny(topicName, "# +") {
-		return PublishVariableHeader{}, fmt.Errorf("topic name must not contain wildcard. it got is %v", topicName)
+		return nil, fmt.Errorf("topic name must not contain wildcard. it got is %v", topicName)
 	}
 
 	result := PublishVariableHeader{string(topicNameBytes), nil}
-	return result, nil
+	return &result, nil
 }

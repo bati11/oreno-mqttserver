@@ -1,10 +1,7 @@
 package packet
 
 import (
-	"bufio"
 	"io"
-
-	"github.com/pkg/errors"
 )
 
 type ConnectFlags struct {
@@ -23,35 +20,32 @@ type ConnectVariableHeader struct {
 	KeepAlive     uint16
 }
 
-func ToConnectVariableHeader(fixedHeader FixedHeader, r *bufio.Reader) (ConnectVariableHeader, error) {
-	if fixedHeader.PacketType != 1 {
-		return ConnectVariableHeader{}, errors.New("fixedHeader.PacketType must be 1")
-	}
+func (reader *MQTTReader) readConnectVariableHeader() (*ConnectVariableHeader, error) {
 	protocolName := make([]byte, 6)
-	_, err := io.ReadFull(r, protocolName)
+	_, err := io.ReadFull(reader.r, protocolName)
 	if err != nil || !isValidProtocolName(protocolName) {
-		return ConnectVariableHeader{}, RefusedByUnacceptableProtocolVersion("protocol name is invalid")
+		return nil, RefusedByUnacceptableProtocolVersion("protocol name is invalid")
 	}
-	protocolLevel, err := r.ReadByte()
+	protocolLevel, err := reader.r.ReadByte()
 	if err != nil || protocolLevel != 4 {
-		return ConnectVariableHeader{}, RefusedByUnacceptableProtocolVersion("protocol level must be 4")
+		return nil, RefusedByUnacceptableProtocolVersion("protocol level must be 4")
 	}
 
 	// TODO
-	_, err = r.ReadByte() // connectFlags
+	_, err = reader.r.ReadByte() // connectFlags
 	if err != nil {
-		return ConnectVariableHeader{}, err
+		return nil, err
 	}
-	_, err = r.ReadByte() // keepAlive MSB
+	_, err = reader.r.ReadByte() // keepAlive MSB
 	if err != nil {
-		return ConnectVariableHeader{}, err
+		return nil, err
 	}
-	_, err = r.ReadByte() // keepAlive LSB
+	_, err = reader.r.ReadByte() // keepAlive LSB
 	if err != nil {
-		return ConnectVariableHeader{}, err
+		return nil, err
 	}
 
-	return ConnectVariableHeader{
+	return &ConnectVariableHeader{
 		ProtocolName:  "MQTT",
 		ProtocolLevel: 4,
 		ConnectFlags:  ConnectFlags{UserNameFlag: true, PasswordFlag: true, WillRetain: false, WillQoS: 1, WillFlag: true, CleanSession: true},

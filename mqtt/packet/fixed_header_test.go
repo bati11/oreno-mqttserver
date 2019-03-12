@@ -8,14 +8,14 @@ import (
 	"github.com/bati11/oreno-mqtt/mqtt/packet"
 )
 
-func TestToFixedHeader(t *testing.T) {
+func TestMQTTReader_ReadFixedHeader(t *testing.T) {
 	type args struct {
 		r *packet.MQTTReader
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    packet.PublishFixedHeader
+		want    *packet.PublishFixedHeader
 		wantErr bool
 	}{
 		{
@@ -24,7 +24,7 @@ func TestToFixedHeader(t *testing.T) {
 				0x00, // 0000 0 00 0
 				0x00, // 0
 			}))},
-			want:    packet.PublishFixedHeader{PacketType: 0, Dup: 0, QoS1: 0, QoS2: 0, Retain: 0, RemainingLength: 0},
+			want:    &packet.PublishFixedHeader{PacketType: 0, Dup: 0, QoS1: 0, QoS2: 0, Retain: 0, RemainingLength: 0},
 			wantErr: false,
 		},
 		{
@@ -33,7 +33,7 @@ func TestToFixedHeader(t *testing.T) {
 				0x1B, // 0001 1 01 1
 				0x7F, // 127
 			}))},
-			want:    packet.PublishFixedHeader{PacketType: 1, Dup: 1, QoS1: 0, QoS2: 1, Retain: 1, RemainingLength: 127},
+			want:    &packet.PublishFixedHeader{PacketType: 1, Dup: 1, QoS1: 0, QoS2: 1, Retain: 1, RemainingLength: 127},
 			wantErr: false,
 		},
 		{
@@ -42,31 +42,31 @@ func TestToFixedHeader(t *testing.T) {
 				0x24,       // 0002 0 10 0
 				0x80, 0x01, //128
 			}))},
-			want:    packet.PublishFixedHeader{PacketType: 2, Dup: 0, QoS1: 1, QoS2: 0, Retain: 0, RemainingLength: 128},
+			want:    &packet.PublishFixedHeader{PacketType: 2, Dup: 0, QoS1: 1, QoS2: 0, Retain: 0, RemainingLength: 128},
 			wantErr: false,
 		},
 		{
 			name:    "[]",
 			args:    args{packet.NewMQTTReader(bytes.NewBuffer(nil))},
-			want:    packet.PublishFixedHeader{},
+			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "[0x24]",
 			args:    args{packet.NewMQTTReader(bytes.NewBuffer([]byte{0x24}))},
-			want:    packet.PublishFixedHeader{},
+			want:    nil,
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := packet.ToPublishFixedHeader(tt.args.r)
+			got, err := packet.ExportReadPublishFixedHeader(tt.args.r)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ToPublishFixedHeader() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ExportReadPublishFixedHeader() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ToPublishFixedHeader() = %v, want %v", got, tt.want)
+				t.Errorf("ExportReadPublishFixedHeader() = %v, want %v", got, tt.want)
 			}
 		})
 	}

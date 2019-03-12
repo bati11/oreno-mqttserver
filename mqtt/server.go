@@ -44,35 +44,23 @@ func handle(conn net.Conn) error {
 			}
 			return err
 		}
-		if packetType == packet.PUBLISH {
-			fixedHeader, err := packet.ToPublishFixedHeader(mqttReader)
+		switch packetType {
+		case packet.PUBLISH:
+			err = handler.HandlePublish(mqttReader)
 			if err != nil {
 				return err
 			}
-			fmt.Printf("-----\n%+v\n", fixedHeader)
-			err = handler.HandlePublish(fixedHeader, r)
+		case packet.CONNECT:
+			connack, err := handler.HandleConnect(mqttReader)
 			if err != nil {
 				return err
 			}
-		} else {
-			fixedHeader, err := packet.ToFixedHeader(mqttReader)
+			_, err = conn.Write(connack.ToBytes())
 			if err != nil {
 				return err
 			}
-			fmt.Printf("-----\n%+v\n", fixedHeader)
-			switch fixedHeader.PacketType {
-			case packet.CONNECT:
-				connack, err := handler.HandleConnect(fixedHeader, r)
-				if err != nil {
-					return err
-				}
-				_, err = conn.Write(connack.ToBytes())
-				if err != nil {
-					return err
-				}
-			case packet.DISCONNECT:
-				return nil
-			}
+		case packet.DISCONNECT:
+			return nil
 		}
 	}
 }

@@ -2,7 +2,6 @@ package packet
 
 import (
 	"bufio"
-	"io"
 )
 
 const (
@@ -23,27 +22,6 @@ const (
 	DISCONNECT
 )
 
-type MQTTReader struct {
-	byte1 *byte
-	r     *bufio.Reader
-}
-
-func NewMQTTReader(r io.Reader) *MQTTReader {
-	bufr := bufio.NewReader(r)
-	return &MQTTReader{r: bufr}
-}
-
-func (d *MQTTReader) ReadPacketType() (uint8, error) {
-	if d.byte1 == nil {
-		byte1, err := d.r.ReadByte()
-		if err != nil {
-			return 0, err
-		}
-		d.byte1 = &byte1
-	}
-	return *d.byte1 >> 4, nil
-}
-
 type FixedHeader struct {
 	PacketType      byte
 	Reserved        byte
@@ -59,17 +37,17 @@ func (h FixedHeader) ToBytes() []byte {
 	return result
 }
 
-func ToFixedHeader(reader *MQTTReader) (FixedHeader, error) {
+func (reader *MQTTReader) readFixedHeader() (*FixedHeader, error) {
 	packetType, err := reader.ReadPacketType()
 	if err != nil {
-		return FixedHeader{}, err
+		return nil, err
 	}
 	reserved := *reader.byte1 >> 4
 	remainingLength, err := decodeRemainingLength(reader.r)
 	if err != nil {
-		return FixedHeader{}, err
+		return nil, err
 	}
-	return FixedHeader{
+	return &FixedHeader{
 		PacketType:      packetType,
 		Reserved:        reserved,
 		RemainingLength: remainingLength,
@@ -94,10 +72,10 @@ func (h PublishFixedHeader) ToBytes() []byte {
 	return result
 }
 
-func ToPublishFixedHeader(reader *MQTTReader) (PublishFixedHeader, error) {
+func (reader *MQTTReader) readPublishFixedHeader() (*PublishFixedHeader, error) {
 	packetType, err := reader.ReadPacketType()
 	if err != nil {
-		return PublishFixedHeader{}, err
+		return nil, err
 	}
 	dup := refbit(*reader.byte1, 3)
 	qos1 := refbit(*reader.byte1, 2)
@@ -105,9 +83,9 @@ func ToPublishFixedHeader(reader *MQTTReader) (PublishFixedHeader, error) {
 	retain := refbit(*reader.byte1, 0)
 	remainingLength, err := decodeRemainingLength(reader.r)
 	if err != nil {
-		return PublishFixedHeader{}, err
+		return nil, err
 	}
-	return PublishFixedHeader{
+	return &PublishFixedHeader{
 		PacketType:      packetType,
 		Dup:             dup,
 		QoS1:            qos1,

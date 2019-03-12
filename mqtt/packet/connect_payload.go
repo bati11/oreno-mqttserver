@@ -1,7 +1,6 @@
 package packet
 
 import (
-	"bufio"
 	"encoding/binary"
 	"io"
 	"regexp"
@@ -13,25 +12,25 @@ type ConnectPayload struct {
 
 var clientIDRegex = regexp.MustCompile("^[a-zA-Z0-9-|]*$")
 
-func ToConnectPayload(r *bufio.Reader) (ConnectPayload, error) {
+func (reader *MQTTReader) readConnectPayload() (*ConnectPayload, error) {
 	lengthBytes := make([]byte, 2)
-	_, err := io.ReadFull(r, lengthBytes)
+	_, err := io.ReadFull(reader.r, lengthBytes)
 	if err != nil {
-		return ConnectPayload{}, err
+		return nil, err
 	}
 	length := binary.BigEndian.Uint16(lengthBytes)
 
 	clientIDBytes := make([]byte, length)
-	_, err = io.ReadFull(r, clientIDBytes)
+	_, err = io.ReadFull(reader.r, clientIDBytes)
 	if err != nil {
-		return ConnectPayload{}, err
+		return nil, err
 	}
 	clientID := string(clientIDBytes)
 	if len(clientID) < 1 || len(clientID) > 23 {
-		return ConnectPayload{}, RefusedByIdentifierRejected("ClientID length is invalid")
+		return nil, RefusedByIdentifierRejected("ClientID length is invalid")
 	}
 	if !clientIDRegex.MatchString(clientID) {
-		return ConnectPayload{}, RefusedByIdentifierRejected("ClientId format shoud be \"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\"")
+		return nil, RefusedByIdentifierRejected("ClientId format shoud be \"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\"")
 	}
-	return ConnectPayload{ClientID: clientID}, nil
+	return &ConnectPayload{ClientID: clientID}, nil
 }
