@@ -59,6 +59,15 @@ func handle(conn net.Conn) error {
 			if err != nil {
 				return err
 			}
+		case packet.SUBSCRIBE:
+			suback, err := handler.HandleSubscribe(mqttReader)
+			if err != nil {
+				return err
+			}
+			_, err = conn.Write(suback.ToBytes())
+			if err != nil {
+				return err
+			}
 		case packet.DISCONNECT:
 			return nil
 		}
