@@ -68,6 +68,15 @@ func handle(conn net.Conn) error {
 			if err != nil {
 				return err
 			}
+		case packet.PINGREQ:
+			pingresp, err := handler.HandlePingreq(mqttReader)
+			if err != nil {
+				return err
+			}
+			_, err = conn.Write(pingresp.ToBytes())
+			if err != nil {
+				return err
+			}
 		case packet.DISCONNECT:
 			return nil
 		}
