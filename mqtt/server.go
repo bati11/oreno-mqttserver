@@ -23,10 +23,12 @@ func Run() {
 			panic(err)
 		}
 
-		err = handle(conn)
-		if err != nil {
-			panic(err)
-		}
+		go func() {
+			err = handle(conn)
+			if err != nil {
+				panic(err)
+			}
+		}()
 	}
 }
 
