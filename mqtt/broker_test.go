@@ -3,6 +3,8 @@ package mqtt
 import (
 	"sync"
 	"testing"
+
+	"github.com/bati11/oreno-mqtt/mqtt/packet"
 )
 
 func TestBroker(t *testing.T) {
@@ -12,23 +14,23 @@ func TestBroker(t *testing.T) {
 	// "broker" goroutine
 	go Broker(publishers, subscribers)
 
-	sub1 := make(chan []byte)
+	sub1 := make(chan *packet.Publish)
 	subscribers <- sub1
-	sub2 := make(chan []byte)
+	sub2 := make(chan *packet.Publish)
 	subscribers <- sub2
 
 	// "pub" goroutine
 	go func() {
 		// 1回目のpublish
-		pub1 := make(chan []byte)
+		pub1 := make(chan *packet.Publish)
 		publishers <- pub1
-		pub1 <- []byte("hoge")
+		pub1 <- packet.NewPublish("sampleTopic", []byte("hoge"))
 		close(pub1)
 
 		// 2回目のpublish
-		pub2 := make(chan []byte)
+		pub2 := make(chan *packet.Publish)
 		publishers <- pub2
-		pub2 <- []byte("fuga")
+		pub2 <- packet.NewPublish("sampleTopic", []byte("fuga"))
 		close(pub2)
 	}()
 
@@ -43,16 +45,16 @@ func TestBroker(t *testing.T) {
 		if !ok {
 			t.Fatalf("failed read from channel")
 		}
-		if string(message1_1) != "hoge" {
-			t.Fatalf("got %v, want \"hoge\"", string(message1_1))
+		if string(message1_1.Payload) != "hoge" {
+			t.Fatalf("got %v, want \"hoge\"", string(message1_1.Payload))
 		}
 
 		message1_2, ok := <-sub1
 		if !ok {
 			t.Fatalf("failed read from channel")
 		}
-		if string(message1_2) != "fuga" {
-			t.Fatalf("got %v, want \"fuga\"", string(message1_2))
+		if string(message1_2.Payload) != "fuga" {
+			t.Fatalf("got %v, want \"fuga\"", string(message1_2.Payload))
 		}
 	}()
 
@@ -64,16 +66,16 @@ func TestBroker(t *testing.T) {
 		if !ok {
 			t.Fatalf("failed read from channel")
 		}
-		if string(message2_1) != "hoge" {
-			t.Fatalf("got %v, want \"hoge\"", string(message2_1))
+		if string(message2_1.Payload) != "hoge" {
+			t.Fatalf("got %v, want \"hoge\"", string(message2_1.Payload))
 		}
 
 		message2_2, ok := <-sub2
 		if !ok {
 			t.Fatalf("failed read from channel")
 		}
-		if string(message2_2) != "fuga" {
-			t.Fatalf("got %v, want \"fuga\"", string(message2_2))
+		if string(message2_2.Payload) != "fuga" {
+			t.Fatalf("got %v, want \"fuga\"", string(message2_2.Payload))
 		}
 	}()
 

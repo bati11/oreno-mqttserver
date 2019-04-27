@@ -5,7 +5,7 @@ import (
 )
 
 type Publish struct {
-	FixedHeader    *FixedHeader
+	FixedHeader    *PublishFixedHeader
 	VariableHeader *PublishVariableHeader
 	Payload        PublishPayload
 }
@@ -16,8 +16,14 @@ func (p *Publish) PayloadLength() uint {
 	return p.FixedHeader.RemainingLength - p.VariableHeader.Length()
 }
 
+func NewPublish(topicName string, message []byte) *Publish {
+	variableHeader := NewPublishVariableHeader(topicName)
+	fixedHeader := NewPublishFixedHeader(PUBLISH, variableHeader.Length()+uint(len(message)))
+	return &Publish{fixedHeader, variableHeader, message}
+}
+
 func (reader *MQTTReader) ReadPublish() (*Publish, error) {
-	fixedHeader, err := reader.readFixedHeader()
+	fixedHeader, err := reader.readPublishFixedHeader()
 	if err != nil {
 		return nil, err
 	}

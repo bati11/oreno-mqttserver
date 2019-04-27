@@ -63,6 +63,13 @@ type PublishFixedHeader struct {
 	RemainingLength uint
 }
 
+func NewPublishFixedHeader(packetType byte, remainingLength uint) *PublishFixedHeader {
+	return &PublishFixedHeader{
+		PacketType:      packetType,
+		RemainingLength: remainingLength,
+	}
+}
+
 func (h PublishFixedHeader) ToBytes() []byte {
 	var result []byte
 	b := h.PacketType << 4
