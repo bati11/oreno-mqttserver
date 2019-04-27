@@ -8,11 +8,12 @@ import (
 )
 
 func TestBroker(t *testing.T) {
-	publishers := make(chan Publisher)
+	pub := make(chan *packet.Publish)
+	defer close(pub)
 	subscriptions := make(chan Subscription)
 
 	// "broker" goroutine
-	go Broker(publishers, subscriptions)
+	go Broker(pub, subscriptions)
 
 	sub1 := make(chan *packet.Publish)
 	subscriptions <- sub1
@@ -22,16 +23,10 @@ func TestBroker(t *testing.T) {
 	// "pub" goroutine
 	go func() {
 		// 1回目のpublish
-		pub1 := make(chan *packet.Publish)
-		publishers <- pub1
-		pub1 <- packet.NewPublish("sampleTopic", []byte("hoge"))
-		close(pub1)
+		pub <- packet.NewPublish("sampleTopic", []byte("hoge"))
 
 		// 2回目のpublish
-		pub2 := make(chan *packet.Publish)
-		publishers <- pub2
-		pub2 <- packet.NewPublish("sampleTopic", []byte("fuga"))
-		close(pub2)
+		pub <- packet.NewPublish("sampleTopic", []byte("fuga"))
 	}()
 
 	wg := sync.WaitGroup{}
@@ -80,5 +75,4 @@ func TestBroker(t *testing.T) {
 	}()
 
 	wg.Wait()
-	close(publishers)
 }
