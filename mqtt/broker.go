@@ -3,13 +3,13 @@ package mqtt
 import "github.com/bati11/oreno-mqtt/mqtt/packet"
 
 type Publisher <-chan *packet.Publish
-type Subscriber chan<- *packet.Publish
+type Subscription chan<- *packet.Publish
 
-func Broker(publishers <-chan Publisher, subscribers <-chan Subscriber) {
-	var ss []Subscriber
+func Broker(publishers <-chan Publisher, subscriptions <-chan Subscription) {
+	var ss []Subscription
 	for {
 		select {
-		case sub := <-subscribers:
+		case sub := <-subscriptions:
 			ss = append(ss, sub)
 		case pub := <-publishers:
 			for message := range pub {

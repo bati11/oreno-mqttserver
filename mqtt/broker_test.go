@@ -9,15 +9,15 @@ import (
 
 func TestBroker(t *testing.T) {
 	publishers := make(chan Publisher)
-	subscribers := make(chan Subscriber)
+	subscriptions := make(chan Subscription)
 
 	// "broker" goroutine
-	go Broker(publishers, subscribers)
+	go Broker(publishers, subscriptions)
 
 	sub1 := make(chan *packet.Publish)
-	subscribers <- sub1
+	subscriptions <- sub1
 	sub2 := make(chan *packet.Publish)
-	subscribers <- sub2
+	subscriptions <- sub2
 
 	// "pub" goroutine
 	go func() {
