@@ -10,6 +10,14 @@ type Publish struct {
 	Payload        PublishPayload
 }
 
+func (p Publish) ToBytes() []byte {
+	var result []byte
+	result = append(result, p.FixedHeader.ToBytes()...)
+	result = append(result, p.VariableHeader.ToBytes()...)
+	result = append(result, []byte(string(p.Payload))...)
+	return result
+}
+
 type PublishPayload []byte
 
 func (p *Publish) PayloadLength() uint {
