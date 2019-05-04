@@ -24,10 +24,7 @@ const (
 
 type FixedHeader struct {
 	PacketType      byte
-	Dup             byte
-	QoS1            byte
-	QoS2            byte
-	Retain          byte
+	Reserved        byte
 	RemainingLength uint
 }
 
@@ -40,21 +37,62 @@ func (h FixedHeader) ToBytes() []byte {
 	return result
 }
 
-func ToFixedHeader(r *bufio.Reader) (FixedHeader, error) {
-	b, err := r.ReadByte()
+func (reader *MQTTReader) readFixedHeader() (*FixedHeader, error) {
+	packetType, err := reader.ReadPacketType()
 	if err != nil {
-		return FixedHeader{}, err
+		return nil, err
 	}
-	packetType := b >> 4
-	dup := refbit(b, 3)
-	qos1 := refbit(b, 2)
-	qos2 := refbit(b, 1)
-	retain := refbit(b, 0)
-	remainingLength, err := decodeRemainingLength(r)
+	reserved := *reader.byte1 >> 4
+	remainingLength, err := decodeRemainingLength(reader.r)
 	if err != nil {
-		return FixedHeader{}, err
+		return nil, err
 	}
-	return FixedHeader{
+	return &FixedHeader{
+		PacketType:      packetType,
+		Reserved:        reserved,
+		RemainingLength: remainingLength,
+	}, nil
+}
+
+type PublishFixedHeader struct {
+	PacketType      byte
+	Dup             byte
+	QoS1            byte
+	QoS2            byte
+	Retain          byte
+	RemainingLength uint
+}
+
+func NewPublishFixedHeader(packetType byte, remainingLength uint) *PublishFixedHeader {
+	return &PublishFixedHeader{
+		PacketType:      packetType,
+		RemainingLength: remainingLength,
+	}
+}
+
+func (h PublishFixedHeader) ToBytes() []byte {
+	var result []byte
+	b := h.PacketType << 4
+	result = append(result, b)
+	remainingLength := encodeRemainingLength(h.RemainingLength)
+	result = append(result, remainingLength...)
+	return result
+}
+
+func (reader *MQTTReader) readPublishFixedHeader() (*PublishFixedHeader, error) {
+	packetType, err := reader.ReadPacketType()
+	if err != nil {
+		return nil, err
+	}
+	dup := refbit(*reader.byte1, 3)
+	qos1 := refbit(*reader.byte1, 2)
+	qos2 := refbit(*reader.byte1, 1)
+	retain := refbit(*reader.byte1, 0)
+	remainingLength, err := decodeRemainingLength(reader.r)
+	if err != nil {
+		return nil, err
+	}
+	return &PublishFixedHeader{
 		PacketType:      packetType,
 		Dup:             dup,
 		QoS1:            qos1,

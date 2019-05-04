@@ -15,7 +15,16 @@ func Run() {
 	if err != nil {
 		panic(err)
 	}
+	defer ln.Close()
+
 	fmt.Println("server starts at localhost:1883")
+
+	pub := make(chan *packet.Publish)
+	defer close(pub)
+	subscriptions := make(chan Subscription)
+	defer close(subscriptions)
+
+	go Broker(pub, subscriptions)
 
 	for {
 		conn, err := ln.Accept()
@@ -23,31 +32,38 @@ func Run() {
 			panic(err)
 		}
 
-		err = handle(conn)
-		if err != nil {
-			panic(err)
-		}
+		go func() {
+			err = handle(conn, pub, subscriptions)
+			if err != nil {
+				panic(err)
+			}
+		}()
 	}
 }
 
-func handle(conn net.Conn) error {
+func handle(conn net.Conn, publishToBroker chan<- *packet.Publish, subscriptionToBroker chan<- Subscription) error {
 	defer conn.Close()
 
 	for {
 		r := bufio.NewReader(conn)
-		fixedHeader, err := packet.ToFixedHeader(r)
+		mqttReader := packet.NewMQTTReader(r)
+		packetType, err := mqttReader.ReadPacketType()
 		if err != nil {
 			if err == io.EOF {
-				// クライアント側から既に切断してる場合
+				fmt.Println("client closed")
 				return nil
 			}
 			return err
 		}
-		fmt.Printf("-----\n%+v\n", fixedHeader)
-
-		switch fixedHeader.PacketType {
+		switch packetType {
+		case packet.PUBLISH:
+			publish, err := handler.HandlePublish(mqttReader)
+			if err != nil {
+				return err
+			}
+			publishToBroker <- publish
 		case packet.CONNECT:
-			connack, err := handler.HandleConnect(fixedHeader, r)
+			connack, err := handler.HandleConnect(mqttReader)
 			if err != nil {
 				return err
 			}
@@ -55,13 +71,40 @@ func handle(conn net.Conn) error {
 			if err != nil {
 				return err
 			}
-		case packet.PUBLISH:
-			err := handler.HandlePublish(fixedHeader, r)
+		case packet.SUBSCRIBE:
+			suback, err := handler.HandleSubscribe(mqttReader)
+			if err != nil {
+				return err
+			}
+			_, err = conn.Write(suback.ToBytes())
+			if err != nil {
+				return err
+			}
+			sub := make(chan *packet.Publish)
+			subscriptionToBroker <- sub
+			go handleSub(conn, sub)
+		case packet.PINGREQ:
+			pingresp, err := handler.HandlePingreq(mqttReader)
+			if err != nil {
+				return err
+			}
+			_, err = conn.Write(pingresp.ToBytes())
 			if err != nil {
 				return err
 			}
 		case packet.DISCONNECT:
 			return nil
+		}
+	}
+}
+
+func handleSub(conn net.Conn, fromBroker <-chan *packet.Publish) {
+	for publishMessage := range fromBroker {
+		bs := publishMessage.ToBytes()
+		_, err := conn.Write(bs)
+		if err != nil {
+			// FIXME
+			fmt.Println(err)
 		}
 	}
 }

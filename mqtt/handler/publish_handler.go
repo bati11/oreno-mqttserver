@@ -1,29 +1,20 @@
 package handler
 
 import (
-	"bufio"
 	"fmt"
-	"io"
 
 	"github.com/bati11/oreno-mqtt/mqtt/packet"
 )
 
-func HandlePublish(fixedHeader packet.FixedHeader, r *bufio.Reader) error {
+func HandlePublish(reader *packet.MQTTReader) (*packet.Publish, error) {
 	fmt.Printf("  HandlePublish\n")
-	variableHeader, err := packet.ToPublishVariableHeader(fixedHeader, r)
+	publish, err := reader.ReadPublish()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	fmt.Printf("  %#v\n", variableHeader)
-
-	payloadLength := fixedHeader.RemainingLength - variableHeader.Length
-	payload := make([]byte, payloadLength)
-	_, err = io.ReadFull(r, payload)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("  Payload: %v\n", string(payload))
+	fmt.Printf("  %#v\n", publish.VariableHeader)
+	fmt.Printf("  Payload: %v\n", string(publish.Payload))
 
 	// TODO QoS0なのでレスポンスなし
-	return nil
+	return publish, nil
 }
