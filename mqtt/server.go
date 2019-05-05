@@ -21,10 +21,12 @@ func Run() {
 
 	pub := make(chan *packet.Publish)
 	defer close(pub)
-	subscriptions := make(chan Subscription)
+	subscriptions := make(chan *Subscription)
 	defer close(subscriptions)
+	doneSubscriptionToBroker := make(chan *DoneSubscriptionResult)
+	defer close(doneSubscriptionToBroker)
 
-	go Broker(pub, subscriptions)
+	go Broker(pub, subscriptions, doneSubscriptionToBroker)
 
 	for {
 		conn, err := ln.Accept()
@@ -33,7 +35,7 @@ func Run() {
 		}
 
 		go func() {
-			err = handle(conn, pub, subscriptions)
+			err = handle(conn, pub, subscriptions, doneSubscriptionToBroker)
 			if err != nil {
 				panic(err)
 			}
@@ -41,8 +43,10 @@ func Run() {
 	}
 }
 
-func handle(conn net.Conn, publishToBroker chan<- *packet.Publish, subscriptionToBroker chan<- Subscription) error {
+func handle(conn net.Conn, publishToBroker chan<- *packet.Publish, subscriptionToBroker chan<- *Subscription, doneSubscriptions chan<- *DoneSubscriptionResult) error {
 	defer conn.Close()
+
+	var clientID string
 
 	for {
 		r := bufio.NewReader(conn)
@@ -63,7 +67,7 @@ func handle(conn net.Conn, publishToBroker chan<- *packet.Publish, subscriptionT
 			}
 			publishToBroker <- publish
 		case packet.CONNECT:
-			connack, err := handler.HandleConnect(mqttReader)
+			connect, connack, err := handler.HandleConnect(mqttReader)
 			if err != nil {
 				return err
 			}
@@ -71,6 +75,7 @@ func handle(conn net.Conn, publishToBroker chan<- *packet.Publish, subscriptionT
 			if err != nil {
 				return err
 			}
+			clientID = connect.Payload.ClientID
 		case packet.SUBSCRIBE:
 			suback, err := handler.HandleSubscribe(mqttReader)
 			if err != nil {
@@ -80,9 +85,16 @@ func handle(conn net.Conn, publishToBroker chan<- *packet.Publish, subscriptionT
 			if err != nil {
 				return err
 			}
-			sub := make(chan *packet.Publish)
-			subscriptionToBroker <- sub
-			go handleSub(conn, sub)
+			subscription, errCh := handleSub(clientID, conn)
+			subscriptionToBroker <- subscription
+			go func() {
+				err, ok := <-errCh
+				if !ok {
+					return
+				}
+				done := NewDoneSubscriptionResult(subscription.clientID, err)
+				doneSubscriptions <- done
+			}()
 		case packet.PINGREQ:
 			pingresp, err := handler.HandlePingreq(mqttReader)
 			if err != nil {
@@ -98,13 +110,18 @@ func handle(conn net.Conn, publishToBroker chan<- *packet.Publish, subscriptionT
 	}
 }
 
-func handleSub(conn net.Conn, fromBroker <-chan *packet.Publish) {
-	for publishMessage := range fromBroker {
-		bs := publishMessage.ToBytes()
-		_, err := conn.Write(bs)
-		if err != nil {
-			// FIXME
-			fmt.Println(err)
+func handleSub(clientID string, conn net.Conn) (*Subscription, <-chan error) {
+	errCh := make(chan error)
+	subscription, pubFromBroker := NewSubscription(clientID)
+	go func() {
+		defer close(errCh)
+		for publishMessage := range pubFromBroker {
+			bs := publishMessage.ToBytes()
+			_, err := conn.Write(bs)
+			if err != nil {
+				errCh <- err
+			}
 		}
-	}
+	}()
+	return subscription, errCh
 }

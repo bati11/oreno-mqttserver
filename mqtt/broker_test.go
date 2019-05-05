@@ -10,14 +10,18 @@ import (
 func TestBroker(t *testing.T) {
 	pub := make(chan *packet.Publish)
 	defer close(pub)
-	subscriptions := make(chan Subscription)
+	subscriptions := make(chan *Subscription)
+	defer close(subscriptions)
+	doneSubscriptionToBroker := make(chan *DoneSubscriptionResult)
+	defer close(doneSubscriptionToBroker)
 
 	// "broker" goroutine
-	go Broker(pub, subscriptions)
+	go Broker(pub, subscriptions, doneSubscriptionToBroker)
 
-	sub1 := make(chan *packet.Publish)
+	sub1, pubFromSubscription1 := NewSubscription("sub1")
 	subscriptions <- sub1
-	sub2 := make(chan *packet.Publish)
+
+	sub2, pubFromSubscription2 := NewSubscription("sub2")
 	subscriptions <- sub2
 
 	// "pub" goroutine
@@ -36,7 +40,7 @@ func TestBroker(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		message1_1, ok := <-sub1
+		message1_1, ok := <-pubFromSubscription1
 		if !ok {
 			t.Fatalf("failed read from channel")
 		}
@@ -44,7 +48,7 @@ func TestBroker(t *testing.T) {
 			t.Fatalf("got %v, want \"hoge\"", string(message1_1.Payload))
 		}
 
-		message1_2, ok := <-sub1
+		message1_2, ok := <-pubFromSubscription1
 		if !ok {
 			t.Fatalf("failed read from channel")
 		}
@@ -57,7 +61,7 @@ func TestBroker(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		message2_1, ok := <-sub2
+		message2_1, ok := <-pubFromSubscription2
 		if !ok {
 			t.Fatalf("failed read from channel")
 		}
@@ -65,7 +69,7 @@ func TestBroker(t *testing.T) {
 			t.Fatalf("got %v, want \"hoge\"", string(message2_1.Payload))
 		}
 
-		message2_2, ok := <-sub2
+		message2_2, ok := <-pubFromSubscription2
 		if !ok {
 			t.Fatalf("failed read from channel")
 		}
