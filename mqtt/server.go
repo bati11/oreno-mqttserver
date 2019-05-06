@@ -2,6 +2,7 @@ package mqtt
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -48,6 +49,9 @@ func handle(conn net.Conn, publishToBroker chan<- *packet.Publish, subscriptionT
 
 	var clientID string
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	for {
 		r := bufio.NewReader(conn)
 		mqttReader := packet.NewMQTTReader(r)
@@ -85,16 +89,21 @@ func handle(conn net.Conn, publishToBroker chan<- *packet.Publish, subscriptionT
 			if err != nil {
 				return err
 			}
-			subscription, errCh := handleSub(clientID, conn)
+			subscription, errCh := handleSub(ctx, clientID, conn)
 			subscriptionToBroker <- subscription
-			go func() {
-				err, ok := <-errCh
-				if !ok {
-					return
+			go func(ctx context.Context) {
+				var result *DoneSubscriptionResult
+				select {
+				case <-ctx.Done():
+					result = NewDoneSubscriptionResult(subscription.clientID, nil)
+				case err, ok := <-errCh:
+					if !ok {
+						return
+					}
+					result = NewDoneSubscriptionResult(subscription.clientID, err)
 				}
-				done := NewDoneSubscriptionResult(subscription.clientID, err)
-				doneSubscriptions <- done
-			}()
+				doneSubscriptions <- result
+			}(ctx)
 		case packet.PINGREQ:
 			pingresp, err := handler.HandlePingreq(mqttReader)
 			if err != nil {
@@ -110,16 +119,24 @@ func handle(conn net.Conn, publishToBroker chan<- *packet.Publish, subscriptionT
 	}
 }
 
-func handleSub(clientID string, conn net.Conn) (*Subscription, <-chan error) {
+func handleSub(ctx context.Context, clientID string, conn net.Conn) (*Subscription, <-chan error) {
 	errCh := make(chan error)
 	subscription, pubFromBroker := NewSubscription(clientID)
 	go func() {
 		defer close(errCh)
-		for publishMessage := range pubFromBroker {
-			bs := publishMessage.ToBytes()
-			_, err := conn.Write(bs)
-			if err != nil {
-				errCh <- err
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case publishedMessage, ok := <-pubFromBroker:
+				if !ok {
+					return
+				}
+				bs := publishedMessage.ToBytes()
+				_, err := conn.Write(bs)
+				if err != nil {
+					errCh <- err
+				}
 			}
 		}
 	}()
