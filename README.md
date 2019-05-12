@@ -2,6 +2,10 @@
 
 MQTTサーバーを実装しながらGoを学ぶ。
 
+参考にしたMQTTのバージョンはv3.1.1。
+
+Goのバージョンは .go-version を参考。
+
 日記。
 
 1. [Table Driven Test](https://blog.bati11.info/entry/2019/01/12/163021)
@@ -14,4 +18,6 @@ MQTTサーバーを実装しながらGoを学ぶ。
 8. [goroutine, pprof](https://blog.bati11.info/entry/2019/04/27/122450)
 9. [channelとselect](https://blog.bati11.info/entry/2019/05/03/143055)
 10. [type, "chan<-"と"<-chan"](https://blog.bati11.info/entry/2019/05/04/172551)
+11. [goroutineのエラーハンドリング, map](https://blog.bati11.info/entry/2019/05/06/224639)
+12. [Contextを使ったgoroutineの停止](https://blog.bati11.info/entry/2019/05/12/204358)
 
