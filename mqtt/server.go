@@ -52,8 +52,8 @@ func handle(conn net.Conn, publishToBroker chan<- *packet.Publish, subscriptionT
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	r := bufio.NewReader(conn)
 	for {
-		r := bufio.NewReader(conn)
 		mqttReader := packet.NewMQTTReader(r)
 		packetType, err := mqttReader.ReadPacketType()
 		if err != nil {
@@ -114,9 +114,11 @@ func handle(conn net.Conn, publishToBroker chan<- *packet.Publish, subscriptionT
 				return err
 			}
 		case packet.DISCONNECT:
+			fmt.Println("  handle DISCONNECT")
 			return nil
 		}
 	}
+	return nil
 }
 
 func handleSub(ctx context.Context, clientID string, conn net.Conn) (*Subscription, <-chan error) {
