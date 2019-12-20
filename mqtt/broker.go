@@ -66,9 +66,15 @@ func Broker(fromPub <-chan *packet.Publish, subscriptions <-chan *Subscription, 
 	sMap := newSubscriptionMap()
 	for {
 		select {
-		case sub := <-subscriptions:
+		case sub, ok := <-subscriptions:
+			if !ok {
+				return
+			}
 			sMap.put(sub.clientID, sub)
-		case message := <-fromPub:
+		case message, ok := <-fromPub:
+			if !ok {
+				return
+			}
 			// FIXME 保持しているSubscriberを走査してメッセージを送る
 			// これだと、どれか1つのSubscriberでブロックするとよくない
 			// けど、goroutine作ったとしても結局はどこかでブロックして、それが連鎖を引き起こすだけ
@@ -76,7 +82,10 @@ func Broker(fromPub <-chan *packet.Publish, subscriptions <-chan *Subscription, 
 			sMap.apply(func(sub *Subscription) {
 				sub.pubToSub <- message
 			})
-		case done := <-doneSubscriptions:
+		case done, ok := <-doneSubscriptions:
+			if !ok {
+				return
+			}
 			fmt.Printf("close subscription: %v\n", done.clientID)
 			if done.err != nil {
 				fmt.Println(done.err)
