@@ -1,7 +1,6 @@
 package packet
 
 import (
-	"bufio"
 	"encoding/binary"
 	"io"
 )
@@ -19,7 +18,7 @@ func (reader *MQTTReader) readSubscribePayload(payloadLength uint) (*SubscribePa
 
 	remain := payloadLength
 	for remain > 0 {
-		length, err := extractLength(reader.r)
+		length, err := extractLength(reader)
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -33,13 +32,13 @@ func (reader *MQTTReader) readSubscribePayload(payloadLength uint) (*SubscribePa
 		}
 
 		bs := make([]byte, length)
-		_, err = io.ReadFull(reader.r, bs)
+		_, err = io.ReadFull(reader, bs)
 		if err != nil {
 			return nil, err
 		}
 		topicFilter := string(bs)
 
-		qos, err := extractQoS(reader.r)
+		qos, err := extractQoS(reader)
 		if err != nil {
 			return nil, err
 		}
@@ -50,7 +49,7 @@ func (reader *MQTTReader) readSubscribePayload(payloadLength uint) (*SubscribePa
 	return &SubscribePayload{topicFilterPairs}, nil
 }
 
-func extractLength(r *bufio.Reader) (uint16, error) {
+func extractLength(r *MQTTReader) (uint16, error) {
 	lengthMSB, err := r.ReadByte()
 	if err != nil {
 		return 0, err
@@ -63,7 +62,7 @@ func extractLength(r *bufio.Reader) (uint16, error) {
 	return length, nil
 }
 
-func extractQoS(r *bufio.Reader) (uint8, error) {
+func extractQoS(r *MQTTReader) (uint8, error) {
 	b, err := r.ReadByte()
 	if err != nil {
 		return 0, err

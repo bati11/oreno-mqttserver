@@ -14,14 +14,14 @@ var clientIDRegex = regexp.MustCompile("^[a-zA-Z0-9-|]*$")
 
 func (reader *MQTTReader) readConnectPayload() (*ConnectPayload, error) {
 	lengthBytes := make([]byte, 2)
-	_, err := io.ReadFull(reader.r, lengthBytes)
+	_, err := io.ReadFull(reader, lengthBytes)
 	if err != nil {
 		return nil, err
 	}
 	length := binary.BigEndian.Uint16(lengthBytes)
 
 	clientIDBytes := make([]byte, length)
-	_, err = io.ReadFull(reader.r, clientIDBytes)
+	_, err = io.ReadFull(reader, clientIDBytes)
 	if err != nil {
 		return nil, err
 	}

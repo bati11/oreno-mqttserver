@@ -6,17 +6,64 @@ import (
 )
 
 type MQTTReader struct {
-	byte1 *byte
-	r     *bufio.Reader
+	byte1  *byte
+	conn   *MQTTConn
+	reader *bufio.Reader
 }
 
-func NewMQTTReader(r *bufio.Reader) *MQTTReader {
-	return &MQTTReader{r: r}
+func NewMQTTReader(conn *MQTTConn) *MQTTReader {
+	return &MQTTReader{conn: conn}
+}
+
+func (d *MQTTReader) Read(p []byte) (n int, err error) {
+	if d.reader == nil {
+		r, err := d.conn.nextReader()
+		if err != nil {
+			return 0, err
+		}
+		d.reader = r
+	}
+	return d.reader.Read(p)
+}
+
+func (d *MQTTReader) ReadByte() (uint8, error) {
+	if d.conn.isWebsocket() {
+		if d.reader == nil {
+			r, err := d.conn.nextReader()
+			if err != nil {
+				return 0, err
+			}
+			d.reader = bufio.NewReader(r)
+		}
+		for {
+			byte1, err := d.reader.ReadByte()
+			if err != nil {
+				if err == io.EOF {
+					r, err := d.conn.nextReader()
+					if err != nil {
+						return 0, err
+					}
+					d.reader = bufio.NewReader(r)
+					continue
+				}
+				return 0, err
+			}
+			return byte1, nil
+		}
+	}
+	if d.reader == nil {
+		r, err := d.conn.nextReader()
+		if err != nil {
+			return 0, err
+		}
+		d.reader = r
+	}
+	return d.reader.ReadByte()
 }
 
 func (d *MQTTReader) ReadPacketType() (uint8, error) {
 	if d.byte1 == nil {
-		byte1, err := d.r.ReadByte()
+		byte1, err := d.ReadByte()
 		if err != nil {
 			if err != io.EOF {
 				return 0, err

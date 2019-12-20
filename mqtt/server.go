@@ -1,17 +1,18 @@
 package mqtt
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 
 	"github.com/bati11/oreno-mqtt/mqtt/handler"
 	"github.com/bati11/oreno-mqtt/mqtt/packet"
+	"github.com/gorilla/websocket"
 )
 
-func Run() {
+func Run(withWebSocket bool) {
 	ln, err := net.Listen("tcp", "localhost:1883")
 	if err != nil {
 		panic(err)
@@ -29,22 +30,53 @@ func Run() {
 
 	go Broker(pub, subscriptions, doneSubscriptionToBroker)
 
+	if withWebSocket {
+		upgrader := websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+			Subprotocols:    []string{"mqtt"},
+			CheckOrigin: func(r *http.Request) bool {
+				// FIXME
+				return true
+			},
+		}
+		go func() {
+			fmt.Println("websocket server starts at localhost:9090")
+			http.HandleFunc("/",
+				func(w http.ResponseWriter, r *http.Request) {
+					conn, err := upgrader.Upgrade(w, r, nil)
+					if err != nil {
+						fmt.Println(err)
+						return
+					}
+					mqttConn := packet.NewMQTTConnWithWebSocket(conn)
+					handle(mqttConn, pub, subscriptions, doneSubscriptionToBroker)
+				})
+			err = http.ListenAndServe(":9090", nil)
+			if err != nil {
+				panic("ListenAndServe: " + err.Error())
+			}
+		}()
+	}
+
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
 			panic(err)
 		}
+		mqttConn := packet.NewMQTTConn(conn)
 
 		go func() {
-			err = handle(conn, pub, subscriptions, doneSubscriptionToBroker)
+			err = handle(mqttConn, pub, subscriptions, doneSubscriptionToBroker)
 			if err != nil {
+				fmt.Println(err)
 				panic(err)
 			}
 		}()
 	}
 }
 
-func handle(conn net.Conn, publishToBroker chan<- *packet.Publish, subscriptionToBroker chan<- *Subscription, doneSubscriptions chan<- *DoneSubscriptionResult) error {
+func handle(conn *packet.MQTTConn, publishToBroker chan<- *packet.Publish, subscriptionToBroker chan<- *Subscription, doneSubscriptions chan<- *DoneSubscriptionResult) error {
 	defer conn.Close()
 
 	var clientID string
@@ -52,16 +84,16 @@ func handle(conn net.Conn, publishToBroker chan<- *packet.Publish, subscriptionT
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	r := bufio.NewReader(conn)
 	for {
-		mqttReader := packet.NewMQTTReader(r)
+		mqttReader := packet.NewMQTTReader(conn)
 		packetType, err := mqttReader.ReadPacketType()
 		if err != nil {
-			if err == io.EOF {
-				fmt.Println("client closed")
-				return nil
+			if err != io.EOF {
+				fmt.Printf("failed to mqttReader.ReadPacketType. err: %v\n", err)
+				return err
 			}
-			return err
+			fmt.Println("client EOF")
+			return nil
 		}
 		switch packetType {
 		case packet.PUBLISH:
@@ -75,7 +107,7 @@ func handle(conn net.Conn, publishToBroker chan<- *packet.Publish, subscriptionT
 			if err != nil {
 				return err
 			}
-			_, err = conn.Write(connack.ToBytes())
+			err = conn.Write(connack.ToBytes())
 			if err != nil {
 				return err
 			}
@@ -85,7 +117,7 @@ func handle(conn net.Conn, publishToBroker chan<- *packet.Publish, subscriptionT
 			if err != nil {
 				return err
 			}
-			_, err = conn.Write(suback.ToBytes())
+			err = conn.Write(suback.ToBytes())
 			if err != nil {
 				return err
 			}
@@ -109,19 +141,17 @@ func handle(conn net.Conn, publishToBroker chan<- *packet.Publish, subscriptionT
 			if err != nil {
 				return err
 			}
-			_, err = conn.Write(pingresp.ToBytes())
+			err = conn.Write(pingresp.ToBytes())
 			if err != nil {
 				return err
 			}
 		case packet.DISCONNECT:
 			fmt.Println("  handle DISCONNECT")
-			return nil
 		}
 	}
-	return nil
 }
 
-func handleSub(ctx context.Context, clientID string, conn net.Conn) (*Subscription, <-chan error) {
+func handleSub(ctx context.Context, clientID string, conn *packet.MQTTConn) (*Subscription, <-chan error) {
 	errCh := make(chan error)
 	subscription, pubFromBroker := NewSubscription(clientID)
 	go func() {
@@ -135,7 +165,7 @@ func handleSub(ctx context.Context, clientID string, conn net.Conn) (*Subscripti
 					return
 				}
 				bs := publishedMessage.ToBytes()
-				_, err := conn.Write(bs)
+				err := conn.Write(bs)
 				if err != nil {
 					errCh <- err
 				}

@@ -18,8 +18,8 @@ func HandleSubscribe(reader *packet.MQTTReader) (*packet.Suback, error) {
 	fmt.Printf("  %+v\n", subscribe.Payload)
 
 	var qoss []uint8
-	for range subscribe.Payload.TopicFilterPairs {
-		qoss = append(qoss, 0)
+	for _, t := range subscribe.Payload.TopicFilterPairs {
+		qoss = append(qoss, t.QoS)
 	}
 
 	suback := packet.NewSubackForSuccess(subscribe.VariableHeader.PacketIdentifier, qoss)

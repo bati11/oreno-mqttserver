@@ -10,7 +10,7 @@ import (
 
 func TestMQTTReader_ReadConnectVariableHeader(t *testing.T) {
 	type args struct {
-		r *packet.MQTTReader
+		b []byte
 	}
 	tests := []struct {
 		name    string
@@ -21,12 +21,12 @@ func TestMQTTReader_ReadConnectVariableHeader(t *testing.T) {
 		{
 			name: "仕様書のexample",
 			args: args{
-				r: packet.NewMQTTReader(bytes.NewBuffer([]byte{
+				b: []byte{
 					0x00, 0x04, 'M', 'Q', 'T', 'T', // Protocol Name
 					0x04,       // Protocol Level
 					0xCE,       // Connect Flags
 					0x00, 0x0A, // Keep Alive
-				})),
+				},
 			},
 			want: &packet.ConnectVariableHeader{
 				ProtocolName:  "MQTT",
@@ -39,12 +39,12 @@ func TestMQTTReader_ReadConnectVariableHeader(t *testing.T) {
 		{
 			name: "Protocol Nameが不正",
 			args: args{
-				r: packet.NewMQTTReader(bytes.NewReader([]byte{
+				b: []byte{
 					0x00, 0x04, 'M', 'Q', 'T', 't', // Protocol Name
 					0x04,       // Protocol Level
 					0xCE,       // Connect Flags
 					0x00, 0x0A, // Keep Alive
-				})),
+				},
 			},
 			want:    nil,
 			wantErr: true,
@@ -52,12 +52,12 @@ func TestMQTTReader_ReadConnectVariableHeader(t *testing.T) {
 		{
 			name: "Protocol Levelが不正",
 			args: args{
-				r: packet.NewMQTTReader(bytes.NewReader([]byte{
+				b: []byte{
 					0x00, 0x04, 'M', 'Q', 'T', 'T', // Protocol Name
 					0x03,       // Protocol Level
 					0xCE,       // Connect Flags
 					0x00, 0x0A, // Keep Alive
-				})),
+				},
 			},
 			want:    nil,
 			wantErr: true,
@@ -65,7 +65,9 @@ func TestMQTTReader_ReadConnectVariableHeader(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := packet.ExportReadVariableConnectHeader(tt.args.r)
+			c := packet.NewMQTTConn(&DummyConn{bs: bytes.NewBuffer(tt.args.b)})
+			r := packet.NewMQTTReader(c)
+			got, err := packet.ExportReadVariableConnectHeader(r)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ExportReadVariableConnectHeader() error = %v, wantErr %v", err, tt.wantErr)
 				return

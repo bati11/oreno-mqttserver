@@ -51,11 +51,11 @@ func (p *PublishVariableHeader) ToBytes() []byte {
 }
 
 func (reader *MQTTReader) readPublishVariableHeader() (*PublishVariableHeader, error) {
-	lengthMSB, err := reader.r.ReadByte()
+	lengthMSB, err := reader.ReadByte()
 	if err != nil {
 		return nil, err
 	}
-	lengthLSB, err := reader.r.ReadByte()
+	lengthLSB, err := reader.ReadByte()
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (reader *MQTTReader) readPublishVariableHeader() (*PublishVariableHeader, e
 	}
 
 	topicNameBytes := make([]byte, n)
-	_, err = io.ReadFull(reader.r, topicNameBytes)
+	_, err = io.ReadFull(reader, topicNameBytes)
 	if err != nil {
 		return nil, err
 	}

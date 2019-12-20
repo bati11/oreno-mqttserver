@@ -41,7 +41,7 @@ func (reader *MQTTReader) ReadPublish() (*Publish, error) {
 	}
 	payloadLength := fixedHeader.RemainingLength - variableHeader.Length()
 	payload := make([]byte, payloadLength)
-	_, err = io.ReadFull(reader.r, payload)
+	_, err = io.ReadFull(reader, payload)
 	if err != nil {
 		return nil, err
 	}

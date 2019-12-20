@@ -10,7 +10,7 @@ import (
 
 func TestMQTTReader_ReadFixedHeader(t *testing.T) {
 	type args struct {
-		r *packet.MQTTReader
+		b []byte
 	}
 	tests := []struct {
 		name    string
@@ -20,47 +20,49 @@ func TestMQTTReader_ReadFixedHeader(t *testing.T) {
 	}{
 		{
 			name: "[0x00,0x00]",
-			args: args{packet.NewMQTTReader(bytes.NewBuffer([]byte{
+			args: args{[]byte{
 				0x00, // 0000 0 00 0
 				0x00, // 0
-			}))},
+			}},
 			want:    &packet.PublishFixedHeader{PacketType: 0, Dup: 0, QoS1: 0, QoS2: 0, Retain: 0, RemainingLength: 0},
 			wantErr: false,
 		},
 		{
 			name: "[0x1b,0x7F]",
-			args: args{packet.NewMQTTReader(bytes.NewBuffer([]byte{
+			args: args{[]byte{
 				0x1B, // 0001 1 01 1
 				0x7F, // 127
-			}))},
+			}},
 			want:    &packet.PublishFixedHeader{PacketType: 1, Dup: 1, QoS1: 0, QoS2: 1, Retain: 1, RemainingLength: 127},
 			wantErr: false,
 		},
 		{
 			name: "[0x24,0x80,0x01]",
-			args: args{packet.NewMQTTReader(bytes.NewBuffer([]byte{
+			args: args{[]byte{
 				0x24,       // 0002 0 10 0
 				0x80, 0x01, //128
-			}))},
+			}},
 			want:    &packet.PublishFixedHeader{PacketType: 2, Dup: 0, QoS1: 1, QoS2: 0, Retain: 0, RemainingLength: 128},
 			wantErr: false,
 		},
 		{
 			name:    "[]",
-			args:    args{packet.NewMQTTReader(bytes.NewBuffer(nil))},
+			args:    args{nil},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "[0x24]",
-			args:    args{packet.NewMQTTReader(bytes.NewBuffer([]byte{0x24}))},
+			args:    args{[]byte{0x24}},
 			want:    nil,
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
+		c := packet.NewMQTTConn(&DummyConn{bs: bytes.NewBuffer(tt.args.b)})
+		r := packet.NewMQTTReader(c)
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := packet.ExportReadPublishFixedHeader(tt.args.r)
+			got, err := packet.ExportReadPublishFixedHeader(r)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ExportReadPublishFixedHeader() error = %v, wantErr %v", err, tt.wantErr)
 				return

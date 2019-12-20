@@ -22,25 +22,25 @@ type ConnectVariableHeader struct {
 
 func (reader *MQTTReader) readConnectVariableHeader() (*ConnectVariableHeader, error) {
 	protocolName := make([]byte, 6)
-	_, err := io.ReadFull(reader.r, protocolName)
+	_, err := io.ReadFull(reader, protocolName)
 	if err != nil || !isValidProtocolName(protocolName) {
 		return nil, RefusedByUnacceptableProtocolVersion("protocol name is invalid")
 	}
-	protocolLevel, err := reader.r.ReadByte()
+	protocolLevel, err := reader.ReadByte()
 	if err != nil || protocolLevel != 4 {
 		return nil, RefusedByUnacceptableProtocolVersion("protocol level must be 4")
 	}
 
 	// TODO
-	_, err = reader.r.ReadByte() // connectFlags
+	_, err = reader.ReadByte() // connectFlags
 	if err != nil {
 		return nil, err
 	}
-	_, err = reader.r.ReadByte() // keepAlive MSB
+	_, err = reader.ReadByte() // keepAlive MSB
 	if err != nil {
 		return nil, err
 	}
-	_, err = reader.r.ReadByte() // keepAlive LSB
+	_, err = reader.ReadByte() // keepAlive LSB
 	if err != nil {
 		return nil, err
 	}

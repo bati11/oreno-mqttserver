@@ -10,7 +10,7 @@ import (
 
 func TestMQTTReader_ReadPublishVariableHeader(t *testing.T) {
 	type args struct {
-		r *packet.MQTTReader
+		b []byte
 	}
 	tests := []struct {
 		name    string
@@ -21,11 +21,11 @@ func TestMQTTReader_ReadPublishVariableHeader(t *testing.T) {
 		{
 			name: "a/b",
 			args: args{
-				packet.NewMQTTReader(bytes.NewBuffer([]byte{
+				[]byte{
 					0x00,             // Length MSB
 					0x03,             // Length LSB
 					0x61, 0x2F, 0x62, // a/b
-				})),
+				},
 			},
 			want:    &packet.PublishVariableHeader{LengthMSB: 0, LengthLSB: 3, TopicName: "a/b", PacketIdentifier: nil},
 			wantErr: false,
@@ -33,11 +33,11 @@ func TestMQTTReader_ReadPublishVariableHeader(t *testing.T) {
 		{
 			name: "256文字",
 			args: args{
-				packet.NewMQTTReader(bytes.NewBuffer([]byte{
+				[]byte{
 					0x01,
 					0x00,
 					'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5',
-				})),
+				},
 			},
 			want:    &packet.PublishVariableHeader{LengthMSB: 1, LengthLSB: 0, TopicName: "0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345"},
 			wantErr: false,
@@ -45,7 +45,9 @@ func TestMQTTReader_ReadPublishVariableHeader(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := packet.ExportReadPublishVariableHeader(tt.args.r)
+			c := packet.NewMQTTConn(&DummyConn{bs: bytes.NewBuffer(tt.args.b)})
+			r := packet.NewMQTTReader(c)
+			got, err := packet.ExportReadPublishVariableHeader(r)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ExportReadPublishVariableHeader() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -64,7 +66,8 @@ func TestPublishVariableHeader_Length(t *testing.T) {
 		0x61, 0x2F, 0x62, // a/b
 	}
 	want := uint(len(variableHeaderBytes))
-	r := packet.NewMQTTReader(bytes.NewBuffer(variableHeaderBytes))
+	c := packet.NewMQTTConn(&DummyConn{bs: bytes.NewBuffer(variableHeaderBytes)})
+	r := packet.NewMQTTReader(c)
 	variableHeader, err := packet.ExportReadPublishVariableHeader(r)
 	if err != nil {
 		t.Errorf("ExportReadPublishVariableHeader() error = %v, wantErr %v", err, false)

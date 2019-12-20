@@ -13,11 +13,11 @@ func (s *SubscribeVariableHeader) Length() uint {
 }
 
 func (reader *MQTTReader) readSubscribeVariableHeader() (*SubscribeVariableHeader, error) {
-	packetIdentifierMSB, err := reader.r.ReadByte()
+	packetIdentifierMSB, err := reader.ReadByte()
 	if err != nil {
 		return nil, err
 	}
-	packetIdentifierLSB, err := reader.r.ReadByte()
+	packetIdentifierLSB, err := reader.ReadByte()
 	if err != nil {
 		return nil, err
 	}

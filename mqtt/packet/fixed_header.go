@@ -1,7 +1,7 @@
 package packet
 
 import (
-	"bufio"
+	"fmt"
 )
 
 const (
@@ -40,11 +40,13 @@ func (h FixedHeader) ToBytes() []byte {
 func (reader *MQTTReader) readFixedHeader() (*FixedHeader, error) {
 	packetType, err := reader.ReadPacketType()
 	if err != nil {
+		fmt.Printf("failed to reader.ReadPacketType(). error: %v\n", err)
 		return nil, err
 	}
 	reserved := *reader.byte1 >> 4
-	remainingLength, err := decodeRemainingLength(reader.r)
+	remainingLength, err := decodeRemainingLength(reader)
 	if err != nil {
+		fmt.Printf("failed to decodeRemainingLength. error: %v\n", err)
 		return nil, err
 	}
 	return &FixedHeader{
@@ -88,7 +90,7 @@ func (reader *MQTTReader) readPublishFixedHeader() (*PublishFixedHeader, error) 
 	qos1 := refbit(*reader.byte1, 2)
 	qos2 := refbit(*reader.byte1, 1)
 	retain := refbit(*reader.byte1, 0)
-	remainingLength, err := decodeRemainingLength(reader.r)
+	remainingLength, err := decodeRemainingLength(reader)
 	if err != nil {
 		return nil, err
 	}
@@ -107,13 +109,14 @@ func refbit(b byte, n uint) byte {
 }
 
 // a
-func decodeRemainingLength(r *bufio.Reader) (uint, error) {
+func decodeRemainingLength(r *MQTTReader) (uint, error) {
 	multiplier := uint(1)
 	var value uint
 	i := uint(0)
 	for ; i < 8; i++ {
 		b, err := r.ReadByte()
 		if err != nil {
+			fmt.Printf("failed to decodeRemainingLength r.ReadByte(). i: %v, error: %v\n", i, err)
 			return 0, err
 		}
 		digit := b
