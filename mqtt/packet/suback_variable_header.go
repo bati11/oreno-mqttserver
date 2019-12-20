@@ -11,7 +11,7 @@ func (s *SubackVariableHeader) Length() uint {
 }
 
 func (s *SubackVariableHeader) ToBytes() []byte {
-	result := make([]byte, binary.MaxVarintLen16)
+	result := make([]byte, s.Length())
 	binary.BigEndian.PutUint16(result, s.PacketIdentifier)
 	return result
 }
